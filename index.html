@@ -30,10 +30,14 @@ textarea{resize:vertical;min-height:80px}
 .btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-danger{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn-warning{background:transparent;color:#f59e0b;border:1px solid #f59e0b}
 .entry{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative}
 .entry-date{font-size:12px;color:var(--accent);margin-bottom:6px}
 .entry-text{font-size:13px;color:var(--text2);margin-bottom:4px}
-.delete-btn{position:absolute;top:10px;right:10px;background:var(--red);border:none;color:#fff;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
+.entry-actions{display:flex;gap:8px;margin-top:10px}
+.entry-btn{flex:1;padding:6px;border-radius:6px;border:none;font-size:12px;cursor:pointer;font-weight:600}
+.edit-btn{background:#1e3a5f;color:var(--accent)}
+.delete-btn{background:#7f1d1d;color:#fca5a5}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin:2px}
 .badge-red{background:#7f1d1d;color:#fca5a5}
 .progress-bar{background:var(--border);border-radius:4px;height:8px;margin:6px 0}
@@ -52,6 +56,7 @@ textarea{resize:vertical;min-height:80px}
 .stat-num{font-size:24px;font-weight:700;color:var(--accent)}
 .stat-label{font-size:11px;color:var(--text2)}
 .hidden{display:none}
+.edit-form{background:var(--bg);border:1px solid var(--accent);border-radius:10px;padding:14px;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -130,8 +135,8 @@ textarea{resize:vertical;min-height:80px}
 <div id="tab-ai" class="content hidden">
   <div class="card">
     <div class="card-title">🧠 AI-POWERED STUDY PLAN</div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Your flight notes and training guide (if uploaded) will be sent to Claude AI to generate a personalized weekly study plan in Turkish.</p>
-    <button class="btn btn-primary" onclick="generatePlan()" id="gen-btn">▶ Generate Weekly Study Plan</button>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Evening home study plan — max 1-2 hours per day, 3-day blocks. General aviation tips included.</p>
+    <button class="btn btn-primary" onclick="generatePlan()" id="gen-btn">▶ Generate 3-Day Study Plan</button>
     <div class="ai-result" id="ai-result"></div>
   </div>
 </div>
@@ -145,6 +150,26 @@ textarea{resize:vertical;min-height:80px}
     <p style="font-size:11px;color:var(--text2);margin-top:6px">Get your key at console.anthropic.com</p>
     <button class="btn btn-primary" onclick="saveSettings()">SAVE</button>
     <button class="btn btn-danger" style="margin-top:8px" onclick="clearAll()">Clear All Data</button>
+  </div>
+</div>
+
+<div class="overlay" id="edit-overlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeEdit()">×</button>
+    <div class="modal-title">✏️ Edit Entry</div>
+    <input type="hidden" id="edit-id">
+    <label>Date</label>
+    <input type="date" id="edit-date">
+    <label>Lesson Learned</label>
+    <textarea id="edit-lesson"></textarea>
+    <label>What Went Well</label>
+    <textarea id="edit-good"></textarea>
+    <label>What Needs Improvement</label>
+    <textarea id="edit-improve"></textarea>
+    <label>Technical Notes</label>
+    <textarea id="edit-notes"></textarea>
+    <button class="btn btn-primary" onclick="saveEdit()">SAVE CHANGES</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="closeEdit()">CANCEL</button>
   </div>
 </div>
 
@@ -212,16 +237,51 @@ function deleteEntry(id){
   renderEntries();renderProgress();
 }
 
+function openEdit(id){
+  const e=entries.find(e=>e.id===id);
+  if(!e)return;
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-date').value=e.date;
+  document.getElementById('edit-lesson').value=e.lesson||'';
+  document.getElementById('edit-good').value=e.good||'';
+  document.getElementById('edit-improve').value=e.improve||'';
+  document.getElementById('edit-notes').value=e.notes||'';
+  document.getElementById('edit-overlay').classList.add('open');
+}
+
+function saveEdit(){
+  const id=parseInt(document.getElementById('edit-id').value);
+  const idx=entries.findIndex(e=>e.id===id);
+  if(idx===-1)return;
+  entries[idx]={
+    ...entries[idx],
+    date:document.getElementById('edit-date').value,
+    lesson:document.getElementById('edit-lesson').value,
+    good:document.getElementById('edit-good').value,
+    improve:document.getElementById('edit-improve').value,
+    notes:document.getElementById('edit-notes').value,
+  };
+  localStorage.setItem('fl_entries',JSON.stringify(entries));
+  closeEdit();
+  renderEntries();renderProgress();
+  alert('Updated! ✅');
+}
+
+function closeEdit(){document.getElementById('edit-overlay').classList.remove('open');}
+
 function renderEntries(){
   const el=document.getElementById('entries-list');
   if(!entries.length){el.innerHTML='<p style="color:var(--text2);text-align:center;padding:20px">No flight entries yet</p>';return;}
   el.innerHTML=entries.map(e=>`
     <div class="entry">
-      <button class="delete-btn" onclick="deleteEntry(${e.id})">🗑 Delete</button>
       <div class="entry-date">✈️ ${e.date}</div>
       ${e.lesson?`<div class="entry-text"><b>Learned:</b> ${e.lesson}</div>`:''}
       ${e.good?`<div class="entry-text"><b>Good:</b> ${e.good}</div>`:''}
       ${e.improve?`<div class="entry-text"><b>Improve:</b> ${e.improve}</div>`:''}
+      <div class="entry-actions">
+        <button class="entry-btn edit-btn" onclick="openEdit(${e.id})">✏️ Edit</button>
+        <button class="entry-btn delete-btn" onclick="deleteEntry(${e.id})">🗑 Delete</button>
+      </div>
     </div>
   `).join('');
 }
@@ -287,8 +347,22 @@ async function generatePlan(){
   const result=document.getElementById('ai-result');
   btn.textContent='⏳ Generating...';btn.disabled=true;
   result.style.display='none';
-  const entrySummary=entries.slice(0,10).map(e=>`Date:${e.date}\nLearned:${e.lesson}\nGood:${e.good}\nImprove:${e.improve}`).join('\n---\n');
-  const prompt=`Sen deneyimli bir uçuş eğitmenisin. Aşağıdaki pilotaj öğrencisinin uçuş notlarını${manualText?' ve okul kılavuzunu':''} analiz et, kişiselleştirilmiş haftalık çalışma planı hazırla.\n\n${manualText?`OKUL KILAVUZU:\n${manualText.substring(0,5000)}\n\n`:''}UÇUŞ NOTLARI:\n${entrySummary||'Henüz uçuş kaydı yok, genel bir başlangıç planı hazırla.'}\n\nLütfen Türkçe, detaylı bir haftalık çalışma planı hazırla.`;
+  const entrySummary=entries.slice(0,10).map(e=>`Tarih:${e.date}\nÖğrenilen:${e.lesson}\nİyi:${e.good}\nGeliştirilecek:${e.improve}`).join('\n---\n');
+  const prompt=`Sen deneyimli bir uçuş eğitmenisin. Aşağıdaki pilotaj öğrencisinin uçuş notlarını${manualText?' ve okul kılavuzunu':''} analiz et.
+
+ÖNEMLİ KURALLAR:
+- Öğrenci zaten tüm gün uçuş okulunda eğitim alıyor
+- Sadece AKŞAM EV ÇALIŞMASI için plan yap
+- Her gün maksimum 1-2 saat
+- 3 günlük bloklar halinde planla
+- Gündüz uçuş aktivitesi, simulator veya okul aktivitesi ÖNERME
+- Teorik çalışma, kural ezber, video izleme, zihinsel pratik gibi ev çalışmaları öner
+- Genel uçuş tavsiyeleri ve motivasyon ekle
+
+${manualText?`OKUL KILAVUZU:\n${manualText.substring(0,5000)}\n\n`:''}UÇUŞ NOTLARI:\n${entrySummary||'Henüz uçuş kaydı yok, genel bir başlangıç planı hazırla.'}
+
+Lütfen Türkçe, 3 günlük akşam ev çalışma planı hazırla. Her gün için: konu, aktivite ve süre belirt (toplam maks 1-2 saat/gün).`;
+
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -300,7 +374,7 @@ async function generatePlan(){
     result.textContent=data.content[0].text;
     result.style.display='block';
   }catch(err){alert('Error: '+err.message);}
-  btn.textContent='▶ Generate Weekly Study Plan';btn.disabled=false;
+  btn.textContent='▶ Generate 3-Day Study Plan';btn.disabled=false;
 }
 
 function showTab(tab,el){
