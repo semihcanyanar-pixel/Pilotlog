@@ -5,6 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FlightLog - Pilot Training Journal</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAstijfZ1vjRfcLG0L-mt2Ap313NO7Ak4U",
+    authDomain: "flight-log-47ada.firebaseapp.com",
+    projectId: "flight-log-47ada",
+    storageBucket: "flight-log-47ada.firebasestorage.app",
+    messagingSenderId: "317513060685",
+    appId: "1:317513060685:web:f698b9795a966586aea704"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.db = db;
+  window.fbFunctions = { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy };
+  window.firebaseReady = true;
+  window.dispatchEvent(new Event('firebaseReady'));
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0a0e1a;--bg2:#111827;--card:#1a2235;--accent:#3b82f6;--text:#e2e8f0;--text2:#94a3b8;--border:#1e3a5f;--red:#ef4444}
@@ -30,8 +51,7 @@ textarea{resize:vertical;min-height:80px}
 .btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-danger{background:transparent;color:var(--red);border:1px solid var(--red)}
-.btn-warning{background:transparent;color:#f59e0b;border:1px solid #f59e0b}
-.entry{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative}
+.entry{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
 .entry-date{font-size:12px;color:var(--accent);margin-bottom:6px}
 .entry-text{font-size:13px;color:var(--text2);margin-bottom:4px}
 .entry-actions{display:flex;gap:8px;margin-top:10px}
@@ -56,7 +76,7 @@ textarea{resize:vertical;min-height:80px}
 .stat-num{font-size:24px;font-weight:700;color:var(--accent)}
 .stat-label{font-size:11px;color:var(--text2)}
 .hidden{display:none}
-.edit-form{background:var(--bg);border:1px solid var(--accent);border-radius:10px;padding:14px;margin-bottom:10px}
+.loading{text-align:center;color:var(--text2);padding:20px}
 </style>
 </head>
 <body>
@@ -99,7 +119,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="stars" id="stars-maneuver"></div>
     <button class="btn btn-primary" onclick="saveEntry()">SAVE ENTRY</button>
   </div>
-  <div id="entries-list"></div>
+  <div id="entries-list"><div class="loading">Loading entries...</div></div>
 </div>
 
 <div id="tab-progress" class="content hidden">
@@ -135,7 +155,7 @@ textarea{resize:vertical;min-height:80px}
 <div id="tab-ai" class="content hidden">
   <div class="card">
     <div class="card-title">🧠 AI-POWERED STUDY PLAN</div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Evening home study plan — max 1-2 hours per day, 3-day blocks. General aviation tips included.</p>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Evening home study plan — max 1-2 hours per day, 3-day blocks.</p>
     <button class="btn btn-primary" onclick="generatePlan()" id="gen-btn">▶ Generate 3-Day Study Plan</button>
     <div class="ai-result" id="ai-result"></div>
   </div>
@@ -174,7 +194,7 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <script>
-let entries = JSON.parse(localStorage.getItem('fl_entries')||'[]');
+let entries = [];
 let ratings = {};
 let manualText = localStorage.getItem('fl_manual')||'';
 let manualName = localStorage.getItem('fl_manual_name')||'';
@@ -182,7 +202,7 @@ let apiKey = localStorage.getItem('fl_key')||'';
 
 const skills = [{id:'landing',label:'Landing'},{id:'nav',label:'Navigation'},{id:'radio',label:'Radio/ATC'},{id:'check',label:'Checklist'},{id:'maneuver',label:'Maneuver'}];
 
-function init(){
+async function init(){
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
   skills.forEach(s=>{
     const el = document.getElementById('stars-'+s.id);
@@ -199,7 +219,7 @@ function init(){
     document.getElementById('pdf-name').textContent='✅ '+manualName;
     document.getElementById('clear-pdf-btn').style.display='block';
   }
-  renderEntries();renderProgress();
+  await loadEntries();
 }
 
 function setRating(skill,val){
@@ -208,33 +228,49 @@ function setRating(skill,val){
   stars.forEach((s,i)=>s.classList.toggle('active',i<val));
 }
 
-function saveEntry(){
+async function loadEntries(){
+  try{
+    const {collection,getDocs,query,orderBy}=window.fbFunctions;
+    const q=query(collection(window.db,'entries'),orderBy('date','desc'));
+    const snap=await getDocs(q);
+    entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderEntries();renderProgress();
+  }catch(e){
+    document.getElementById('entries-list').innerHTML='<p style="color:var(--red)">Error loading: '+e.message+'</p>';
+  }
+}
+
+async function saveEntry(){
   const entry={
-    id:Date.now(),
     date:document.getElementById('f-date').value,
     lesson:document.getElementById('f-lesson').value,
     good:document.getElementById('f-good').value,
     improve:document.getElementById('f-improve').value,
     notes:document.getElementById('f-notes').value,
-    ratings:{...ratings}
+    ratings:{...ratings},
+    createdAt:Date.now()
   };
   if(!entry.lesson&&!entry.good&&!entry.improve){alert('Please fill in at least one field!');return;}
-  entries.unshift(entry);
-  localStorage.setItem('fl_entries',JSON.stringify(entries));
-  document.getElementById('f-lesson').value='';
-  document.getElementById('f-good').value='';
-  document.getElementById('f-improve').value='';
-  document.getElementById('f-notes').value='';
-  skills.forEach(s=>setRating(s.id,0));
-  renderEntries();renderProgress();
-  alert('Saved! ✅');
+  try{
+    const {collection,addDoc}=window.fbFunctions;
+    await addDoc(collection(window.db,'entries'),entry);
+    document.getElementById('f-lesson').value='';
+    document.getElementById('f-good').value='';
+    document.getElementById('f-improve').value='';
+    document.getElementById('f-notes').value='';
+    skills.forEach(s=>setRating(s.id,0));
+    await loadEntries();
+    alert('Saved! ✅');
+  }catch(e){alert('Error: '+e.message);}
 }
 
-function deleteEntry(id){
+async function deleteEntry(id){
   if(!confirm('Delete this entry?'))return;
-  entries=entries.filter(e=>e.id!==id);
-  localStorage.setItem('fl_entries',JSON.stringify(entries));
-  renderEntries();renderProgress();
+  try{
+    const {deleteDoc,doc}=window.fbFunctions;
+    await deleteDoc(doc(window.db,'entries',id));
+    await loadEntries();
+  }catch(e){alert('Error: '+e.message);}
 }
 
 function openEdit(id){
@@ -249,22 +285,22 @@ function openEdit(id){
   document.getElementById('edit-overlay').classList.add('open');
 }
 
-function saveEdit(){
-  const id=parseInt(document.getElementById('edit-id').value);
-  const idx=entries.findIndex(e=>e.id===id);
-  if(idx===-1)return;
-  entries[idx]={
-    ...entries[idx],
+async function saveEdit(){
+  const id=document.getElementById('edit-id').value;
+  const data={
     date:document.getElementById('edit-date').value,
     lesson:document.getElementById('edit-lesson').value,
     good:document.getElementById('edit-good').value,
     improve:document.getElementById('edit-improve').value,
     notes:document.getElementById('edit-notes').value,
   };
-  localStorage.setItem('fl_entries',JSON.stringify(entries));
-  closeEdit();
-  renderEntries();renderProgress();
-  alert('Updated! ✅');
+  try{
+    const {updateDoc,doc}=window.fbFunctions;
+    await updateDoc(doc(window.db,'entries',id),data);
+    closeEdit();
+    await loadEntries();
+    alert('Updated! ✅');
+  }catch(e){alert('Error: '+e.message);}
 }
 
 function closeEdit(){document.getElementById('edit-overlay').classList.remove('open');}
@@ -279,8 +315,8 @@ function renderEntries(){
       ${e.good?`<div class="entry-text"><b>Good:</b> ${e.good}</div>`:''}
       ${e.improve?`<div class="entry-text"><b>Improve:</b> ${e.improve}</div>`:''}
       <div class="entry-actions">
-        <button class="entry-btn edit-btn" onclick="openEdit(${e.id})">✏️ Edit</button>
-        <button class="entry-btn delete-btn" onclick="deleteEntry(${e.id})">🗑 Delete</button>
+        <button class="entry-btn edit-btn" onclick="openEdit('${e.id}')">✏️ Edit</button>
+        <button class="entry-btn delete-btn" onclick="deleteEntry('${e.id}')">🗑 Delete</button>
       </div>
     </div>
   `).join('');
@@ -292,7 +328,7 @@ function renderProgress(){
   if(!total){document.getElementById('stat-avg').textContent='-';document.getElementById('skill-bars').innerHTML='';document.getElementById('weak-areas').innerHTML='<p style="color:var(--text2)">No data yet</p>';return;}
   const skillAvgs={};
   skills.forEach(s=>{
-    const vals=entries.map(e=>e.ratings[s.id]||0).filter(v=>v>0);
+    const vals=entries.map(e=>e.ratings&&e.ratings[s.id]||0).filter(v=>v>0);
     skillAvgs[s.id]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   });
   const overall=Object.values(skillAvgs).filter(v=>v>0);
@@ -387,9 +423,10 @@ function showTab(tab,el){
 function openSettings(){document.getElementById('settings-overlay').classList.add('open');}
 function closeSettings(){document.getElementById('settings-overlay').classList.remove('open');}
 function saveSettings(){apiKey=document.getElementById('api-key-input').value.trim();localStorage.setItem('fl_key',apiKey);closeSettings();alert('Saved! ✅');}
-function clearAll(){if(confirm('All data will be deleted!')){entries=[];manualText='';manualName='';localStorage.clear();renderEntries();renderProgress();closeSettings();}}
+function clearAll(){if(confirm('All data will be deleted!')){localStorage.clear();closeSettings();}}
 
-init();
+window.addEventListener('firebaseReady',init);
+if(window.firebaseReady) init();
 </script>
 </body>
 </html>
