@@ -30,9 +30,10 @@ textarea{resize:vertical;min-height:80px}
 .btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-danger{background:transparent;color:var(--red);border:1px solid var(--red)}
-.entry{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+.entry{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative}
 .entry-date{font-size:12px;color:var(--accent);margin-bottom:6px}
 .entry-text{font-size:13px;color:var(--text2);margin-bottom:4px}
+.delete-btn{position:absolute;top:10px;right:10px;background:var(--red);border:none;color:#fff;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin:2px}
 .badge-red{background:#7f1d1d;color:#fca5a5}
 .progress-bar{background:var(--border);border-radius:4px;height:8px;margin:6px 0}
@@ -117,11 +118,12 @@ textarea{resize:vertical;min-height:80px}
     <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Upload your flight school manual. The AI study plan will use it as a reference.</p>
     <div class="pdf-drop" onclick="document.getElementById('pdf-input').click()">
       <div class="pdf-icon">📄</div>
-      <div style="font-weight:600">Drop your PDF training manual here</div>
+      <div id="pdf-name" style="font-weight:600">Drop your PDF training manual here</div>
       <div style="color:var(--text2);font-size:12px;margin-top:4px">or tap to browse your files</div>
     </div>
     <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="loadPDF(event)">
     <div id="pdf-status"></div>
+    <button class="btn btn-danger" id="clear-pdf-btn" style="display:none;margin-top:8px" onclick="clearPDF()">Remove Manual</button>
   </div>
 </div>
 
@@ -150,6 +152,7 @@ textarea{resize:vertical;min-height:80px}
 let entries = JSON.parse(localStorage.getItem('fl_entries')||'[]');
 let ratings = {};
 let manualText = localStorage.getItem('fl_manual')||'';
+let manualName = localStorage.getItem('fl_manual_name')||'';
 let apiKey = localStorage.getItem('fl_key')||'';
 
 const skills = [{id:'landing',label:'Landing'},{id:'nav',label:'Navigation'},{id:'radio',label:'Radio/ATC'},{id:'check',label:'Checklist'},{id:'maneuver',label:'Maneuver'}];
@@ -167,6 +170,10 @@ function init(){
     }
   });
   document.getElementById('api-key-input').value=apiKey;
+  if(manualName){
+    document.getElementById('pdf-name').textContent='✅ '+manualName;
+    document.getElementById('clear-pdf-btn').style.display='block';
+  }
   renderEntries();renderProgress();
 }
 
@@ -198,11 +205,19 @@ function saveEntry(){
   alert('Saved! ✅');
 }
 
+function deleteEntry(id){
+  if(!confirm('Delete this entry?'))return;
+  entries=entries.filter(e=>e.id!==id);
+  localStorage.setItem('fl_entries',JSON.stringify(entries));
+  renderEntries();renderProgress();
+}
+
 function renderEntries(){
   const el=document.getElementById('entries-list');
   if(!entries.length){el.innerHTML='<p style="color:var(--text2);text-align:center;padding:20px">No flight entries yet</p>';return;}
   el.innerHTML=entries.map(e=>`
     <div class="entry">
+      <button class="delete-btn" onclick="deleteEntry(${e.id})">🗑 Delete</button>
       <div class="entry-date">✈️ ${e.date}</div>
       ${e.lesson?`<div class="entry-text"><b>Learned:</b> ${e.lesson}</div>`:''}
       ${e.good?`<div class="entry-text"><b>Good:</b> ${e.good}</div>`:''}
@@ -248,9 +263,22 @@ async function loadPDF(e){
       text+=content.items.map(item=>item.str).join(' ')+'\n';
     }
     manualText=text.substring(0,15000);
+    manualName=file.name;
     localStorage.setItem('fl_manual',manualText);
+    localStorage.setItem('fl_manual_name',manualName);
+    document.getElementById('pdf-name').textContent='✅ '+manualName;
+    document.getElementById('clear-pdf-btn').style.display='block';
     status.innerHTML=`<p style="color:#86efac">✅ Manual loaded! (${pdf.numPages} pages)</p>`;
   }catch(err){status.innerHTML='<p style="color:var(--red)">Error: '+err.message+'</p>';}
+}
+
+function clearPDF(){
+  manualText='';manualName='';
+  localStorage.removeItem('fl_manual');
+  localStorage.removeItem('fl_manual_name');
+  document.getElementById('pdf-name').textContent='Drop your PDF training manual here';
+  document.getElementById('clear-pdf-btn').style.display='none';
+  document.getElementById('pdf-status').innerHTML='';
 }
 
 async function generatePlan(){
@@ -285,7 +313,7 @@ function showTab(tab,el){
 function openSettings(){document.getElementById('settings-overlay').classList.add('open');}
 function closeSettings(){document.getElementById('settings-overlay').classList.remove('open');}
 function saveSettings(){apiKey=document.getElementById('api-key-input').value.trim();localStorage.setItem('fl_key',apiKey);closeSettings();alert('Saved! ✅');}
-function clearAll(){if(confirm('All data will be deleted!')){entries=[];manualText='';localStorage.clear();renderEntries();renderProgress();closeSettings();}}
+function clearAll(){if(confirm('All data will be deleted!')){entries=[];manualText='';manualName='';localStorage.clear();renderEntries();renderProgress();closeSettings();}}
 
 init();
 </script>
