@@ -66,7 +66,7 @@ textarea{resize:vertical;min-height:80px}
 .stat-num{font-size:24px;font-weight:700;color:var(--accent)}
 .stat-label{font-size:11px;color:var(--text2)}
 .hidden{display:none}
-/* Calendar */
+.duty-custom{margin-top:8px;border-left:3px solid var(--accent);padding-left:10px}
 .calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .cal-nav{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:16px}
 .cal-title{font-weight:700;font-size:15px}
@@ -102,7 +102,7 @@ textarea{resize:vertical;min-height:80px}
     <label>Date</label>
     <input type="date" id="f-date">
     <label>Duty Code</label>
-    <select id="f-duty">
+    <select id="f-duty" onchange="toggleCustomDuty('f-duty-custom',this.value)">
       <option value="">Select Duty Code...</option>
       <option value="DUAL">DUAL - Dual Instruction</option>
       <option value="SOLO">SOLO - Solo Flight</option>
@@ -113,6 +113,10 @@ textarea{resize:vertical;min-height:80px}
       <option value="NIGHT">NIGHT - Night Flying</option>
       <option value="IFR">IFR - Instrument Flight</option>
     </select>
+    <div id="f-duty-custom" class="duty-custom hidden">
+      <label>Additional Code / Note</label>
+      <input type="text" id="f-duty-extra" placeholder="e.g. EX-11, P1, circuit training...">
+    </div>
     <label>Lesson Learned</label>
     <textarea id="f-lesson" placeholder="Key takeaway from this session..."></textarea>
     <label>What Went Well</label>
@@ -145,7 +149,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="calendar-grid" id="cal-day-names"></div>
     <div class="calendar-grid" id="calendar-grid"></div>
   </div>
-  <p style="color:var(--text2);font-size:12px;text-align:center">🔵 Days with flight entries</p>
+  <p style="color:var(--text2);font-size:12px;text-align:center">🔵 Days with flight entries — tap to view</p>
 </div>
 
 <div id="tab-progress" class="content hidden">
@@ -192,13 +196,13 @@ textarea{resize:vertical;min-height:80px}
 <div id="tab-ai" class="content hidden">
   <div class="card">
     <div class="card-title">🧠 AI FLIGHT ASSESSMENT REPORT</div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">AI analyzes all your flight logs, scores, and uploaded PDFs to generate a comprehensive assessment report.</p>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">AI analyzes all your flight logs, scores, and uploaded PDFs to generate a comprehensive assessment report in Turkish.</p>
     <button class="btn btn-primary" onclick="generatePlan()" id="gen-btn">▶ Generate Assessment Report</button>
     <div class="ai-result" id="ai-result"></div>
   </div>
 </div>
 
-<!-- Settings Modal -->
+<!-- Settings -->
 <div class="overlay" id="settings-overlay">
   <div class="modal">
     <button class="close-btn" onclick="closeSettings()">×</button>
@@ -211,7 +215,7 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
-<!-- Entry Detail Modal -->
+<!-- Entry Modal -->
 <div class="overlay" id="entry-overlay">
   <div class="modal">
     <button class="close-btn" onclick="closeEntry()">×</button>
@@ -226,7 +230,7 @@ textarea{resize:vertical;min-height:80px}
       <label>Date</label>
       <input type="date" id="edit-date">
       <label>Duty Code</label>
-      <select id="edit-duty">
+      <select id="edit-duty" onchange="toggleCustomDuty('edit-duty-custom',this.value)">
         <option value="">Select Duty Code...</option>
         <option value="DUAL">DUAL - Dual Instruction</option>
         <option value="SOLO">SOLO - Solo Flight</option>
@@ -237,6 +241,10 @@ textarea{resize:vertical;min-height:80px}
         <option value="NIGHT">NIGHT - Night Flying</option>
         <option value="IFR">IFR - Instrument Flight</option>
       </select>
+      <div id="edit-duty-custom" class="duty-custom hidden">
+        <label>Additional Code / Note</label>
+        <input type="text" id="edit-duty-extra" placeholder="e.g. EX-11, P1, circuit training...">
+      </div>
       <label>Lesson Learned</label>
       <textarea id="edit-lesson"></textarea>
       <label>What Went Well</label>
@@ -262,25 +270,25 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <script>
-let entries = [];
-let ratings = {};
-let editRatings = {};
-let manualTexts = [
+let entries=[];
+let ratings={};
+let editRatings={};
+let manualTexts=[
   localStorage.getItem('fl_manual_0')||'',
   localStorage.getItem('fl_manual_1')||'',
   localStorage.getItem('fl_manual_2')||''
 ];
-let manualNames = [
+let manualNames=[
   localStorage.getItem('fl_manual_name_0')||'',
   localStorage.getItem('fl_manual_name_1')||'',
   localStorage.getItem('fl_manual_name_2')||''
 ];
-let apiKey = localStorage.getItem('fl_key')||'';
-let currentEntryId = null;
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth();
+let apiKey=localStorage.getItem('fl_key')||'';
+let currentEntryId=null;
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
 
-const skills = [
+const skills=[
   {id:'landing',label:'Landing'},
   {id:'nav',label:'Navigation'},
   {id:'radio',label:'Radio/ATC'},
@@ -288,20 +296,21 @@ const skills = [
   {id:'maneuver',label:'Maneuver'}
 ];
 
+function toggleCustomDuty(divId, val){
+  const el=document.getElementById(divId);
+  if(val) el.classList.remove('hidden');
+  else el.classList.add('hidden');
+}
+
 async function init(){
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
-  
-  // Init new entry stars
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
   skills.forEach(s=>{
     ratings[s.id]=0;
     editRatings[s.id]=0;
-    initStars('stars-'+s.id, s.id, ratings, false);
-    initStars('edit-stars-'+s.id, s.id, editRatings, true);
+    initStars('stars-'+s.id,s.id,ratings);
+    initStars('edit-stars-'+s.id,s.id,editRatings);
   });
-  
   document.getElementById('api-key-input').value=apiKey;
-  
-  // Init PDFs
   for(let i=0;i<3;i++){
     if(manualNames[i]){
       document.getElementById('pdf-name-'+i).textContent='✅ '+manualNames[i];
@@ -309,37 +318,28 @@ async function init(){
       document.getElementById('clear-pdf-'+i).style.display='block';
     }
   }
-  
   await loadEntries();
   renderCalendar();
 }
 
-function initStars(containerId, skillId, ratingsObj, isEdit){
-  const el = document.getElementById(containerId);
-  if(!el) return;
+function initStars(containerId,skillId,ratingsObj){
+  const el=document.getElementById(containerId);
+  if(!el)return;
   el.innerHTML='';
   for(let i=1;i<=5;i++){
     const star=document.createElement('span');
     star.className='star';
     star.textContent='★';
     star.onclick=(function(sid,val,robj,cid){
-      return function(){
-        robj[sid]=val;
-        updateStarDisplay(cid, val);
-      }
+      return function(){robj[sid]=val;updateStarDisplay(cid,val);}
     })(skillId,i,ratingsObj,containerId);
     el.appendChild(star);
   }
 }
 
-function updateStarDisplay(containerId, val){
+function updateStarDisplay(containerId,val){
   const stars=document.querySelectorAll('#'+containerId+' .star');
   stars.forEach((s,i)=>s.classList.toggle('active',i<val));
-}
-
-function setEditRating(skill, val){
-  editRatings[skill]=val;
-  updateStarDisplay('edit-stars-'+skill, val);
 }
 
 async function loadEntries(){
@@ -350,15 +350,16 @@ async function loadEntries(){
     entries=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderProgress();
     renderCalendar();
-  }catch(e){
-    console.error('Load error:',e);
-  }
+  }catch(e){console.error('Load error:',e);}
 }
 
 async function saveEntry(){
+  const dutyBase=document.getElementById('f-duty').value;
+  const dutyExtra=document.getElementById('f-duty-extra').value.trim();
+  const dutyFull=dutyBase+(dutyExtra?' / '+dutyExtra:'');
   const entry={
     date:document.getElementById('f-date').value,
-    duty:document.getElementById('f-duty').value,
+    duty:dutyFull,
     lesson:document.getElementById('f-lesson').value,
     good:document.getElementById('f-good').value,
     improve:document.getElementById('f-improve').value,
@@ -375,6 +376,8 @@ async function saveEntry(){
     document.getElementById('f-improve').value='';
     document.getElementById('f-notes').value='';
     document.getElementById('f-duty').value='';
+    document.getElementById('f-duty-extra').value='';
+    document.getElementById('f-duty-custom').classList.add('hidden');
     skills.forEach(s=>{ratings[s.id]=0;updateStarDisplay('stars-'+s.id,0);});
     await loadEntries();
     alert('Saved! ✅');
@@ -396,7 +399,10 @@ function switchToEdit(){
   if(!e)return;
   document.getElementById('edit-id').value=e.id;
   document.getElementById('edit-date').value=e.date||'';
-  document.getElementById('edit-duty').value=e.duty||'';
+  const dutyParts=(e.duty||'').split(' / ');
+  document.getElementById('edit-duty').value=dutyParts[0]||'';
+  document.getElementById('edit-duty-extra').value=dutyParts[1]||'';
+  if(dutyParts[0]) document.getElementById('edit-duty-custom').classList.remove('hidden');
   document.getElementById('edit-lesson').value=e.lesson||'';
   document.getElementById('edit-good').value=e.good||'';
   document.getElementById('edit-improve').value=e.improve||'';
@@ -417,9 +423,12 @@ function switchToView(){
 
 async function saveEdit(){
   const id=document.getElementById('edit-id').value;
+  const dutyBase=document.getElementById('edit-duty').value;
+  const dutyExtra=document.getElementById('edit-duty-extra').value.trim();
+  const dutyFull=dutyBase+(dutyExtra?' / '+dutyExtra:'');
   const data={
     date:document.getElementById('edit-date').value,
-    duty:document.getElementById('edit-duty').value,
+    duty:dutyFull,
     lesson:document.getElementById('edit-lesson').value,
     good:document.getElementById('edit-good').value,
     improve:document.getElementById('edit-improve').value,
@@ -446,7 +455,7 @@ function openEntryForDate(dateStr){
     ${e.good?`<p style="margin-bottom:6px"><b>Good:</b> ${e.good}</p>`:''}
     ${e.improve?`<p style="margin-bottom:6px"><b>Improve:</b> ${e.improve}</p>`:''}
     ${e.notes?`<p style="margin-bottom:6px"><b>Notes:</b> ${e.notes}</p>`:''}
-    ${e.ratings?`<div style="margin-top:10px">${skills.map(s=>`<div style="font-size:13px;margin-bottom:4px">${s.label}: ${'★'.repeat(e.ratings[s.id]||0)}${'☆'.repeat(5-(e.ratings[s.id]||0))}</div>`).join('')}</div>`:''}
+    ${e.ratings?`<div style="margin-top:10px;font-size:13px">${skills.map(s=>`<div style="margin-bottom:4px">${s.label}: ${'★'.repeat(e.ratings[s.id]||0)}${'☆'.repeat(5-(e.ratings[s.id]||0))}</div>`).join('')}</div>`:''}
   `;
   document.getElementById('entry-view-mode').classList.remove('hidden');
   document.getElementById('entry-edit-mode').classList.add('hidden');
@@ -455,30 +464,23 @@ function openEntryForDate(dateStr){
 
 function closeEntry(){document.getElementById('entry-overlay').classList.remove('open');}
 
-// Calendar
 function renderCalendar(){
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-title').textContent=months[calMonth]+' '+calYear;
-  
   const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dnEl=document.getElementById('cal-day-names');
-  dnEl.innerHTML=dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
-  
+  document.getElementById('cal-day-names').innerHTML=dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
   const firstDay=new Date(calYear,calMonth,1).getDay();
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const today=new Date().toISOString().split('T')[0];
-  
   const entryDates=new Set(entries.map(e=>e.date));
-  
   let html='';
   for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const hasEntry=entryDates.has(dateStr);
     const isToday=dateStr===today;
-    html+=`<div class="cal-day${hasEntry?' has-entry':''}${isToday?' today':''}" onclick="${hasEntry?`openEntryForDate('${dateStr}')`:''}">`;
-    html+=d;
-    html+=`</div>`;
+    html+=`<div class="cal-day${hasEntry?' has-entry':''}${isToday?' today':''}" ${hasEntry?`onclick="openEntryForDate('${dateStr}')"`:''}>`;
+    html+=d+'</div>';
   }
   document.getElementById('calendar-grid').innerHTML=html;
 }
@@ -519,7 +521,7 @@ function renderProgress(){
 async function loadPDF(e,idx){
   const file=e.target.files[0];if(!file)return;
   const status=document.getElementById('pdf-status');
-  status.innerHTML='<p style="color:var(--accent)">Reading PDF '+( idx+1)+'...</p>';
+  status.innerHTML='<p style="color:var(--accent)">Reading PDF '+(idx+1)+'...</p>';
   try{
     const pdfjsLib=window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -543,8 +545,7 @@ async function loadPDF(e,idx){
 }
 
 function clearPDF(idx){
-  manualTexts[idx]='';
-  manualNames[idx]='';
+  manualTexts[idx]='';manualNames[idx]='';
   localStorage.removeItem('fl_manual_'+idx);
   localStorage.removeItem('fl_manual_name_'+idx);
   document.getElementById('pdf-name-'+idx).textContent='PDF '+(idx+1)+' — Tap to upload';
@@ -558,26 +559,22 @@ async function generatePlan(){
   const result=document.getElementById('ai-result');
   btn.textContent='⏳ Generating Report...';btn.disabled=true;
   result.style.display='none';
-
   const skillAvgs={};
   skills.forEach(s=>{
     const vals=entries.map(e=>e.ratings&&e.ratings[s.id]||0).filter(v=>v>0);
     skillAvgs[s.id]=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0;
   });
-
   const entrySummary=entries.map(e=>`
 Tarih: ${e.date} | Duty: ${e.duty||'-'}
 Öğrenilen: ${e.lesson||'-'}
 İyi Giden: ${e.good||'-'}
 Geliştirilecek: ${e.improve||'-'}
 Notlar: ${e.notes||'-'}
-Puanlar: İniş:${e.ratings?.landing||0}/5 Nav:${e.ratings?.nav||0}/5 Radyo:${e.ratings?.radio||0}/5 Checklist:${e.ratings?.check||0}/5 Manevra:${e.ratings?.maneuver||0}/5`).join('\n---\n');
-
-  const pdfSections = manualTexts.map((t,i)=>t?`\n\n=== PDF ${i+1}: ${manualNames[i]} ===\n${t.substring(0,4000)}`:'').join('');
-
+Puanlar — İniş:${e.ratings?.landing||0}/5 Nav:${e.ratings?.nav||0}/5 Radyo:${e.ratings?.radio||0}/5 Checklist:${e.ratings?.check||0}/5 Manevra:${e.ratings?.maneuver||0}/5`).join('\n---\n');
+  const pdfSections=manualTexts.map((t,i)=>t?`\n\n=== PDF ${i+1}: ${manualNames[i]} ===\n${t.substring(0,4000)}`:'').join('');
   const prompt=`Sen deneyimli bir uçuş eğitmenisin. Aşağıdaki pilotaj öğrencisinin tüm uçuş kayıtlarını, puanlarını ve yüklenen eğitim dokümanlarını kapsamlı olarak analiz et.
 
-GENEL BECERI ORTALAMALARI:
+GENEL BECERİ ORTALAMALARI:
 İniş: ${skillAvgs.landing}/5 | Navigasyon: ${skillAvgs.nav}/5 | Radyo/ATC: ${skillAvgs.radio}/5 | Checklist: ${skillAvgs.check}/5 | Manevra: ${skillAvgs.maneuver}/5
 
 TÜM UÇUŞ KAYITLARI:
@@ -586,26 +583,20 @@ ${pdfSections}
 
 Lütfen aşağıdaki başlıklar altında TÜRKÇE kapsamlı bir değerlendirme raporu hazırla:
 
----
 ## ✅ GÜÇLÜ YÖNLERİM
 (Kayıtlara ve puanlara göre iyi performans gösterilen alanlar)
 
----
 ## ⚠️ GELİŞTİRİLMESİ GEREKEN ALANLAR
 (Zayıf kalan konular, tekrar eden hatalar)
 
----
 ## 📍 MEVCUT EĞİTİM AŞAMASI
 (Entegre Kursu PDF'ini referans alarak şu an hangi aşamada olduğunu değerlendir)
 
----
 ## 🎯 BİR SONRAKİ AŞAMAYA HAZIRLIK
 (Yakında geçilecek aşama için kısa öneriler)
 
----
-## 📋 GENEL DEĞERLENDİRME ÖZETİ
+## 📋 GENEL DEĞERLENDİRME ÖZETİ VE MOTİVASYON
 (Kısa özet ve motivasyon konuşması ile bitir)`;
-
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
