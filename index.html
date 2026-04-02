@@ -8,7 +8,6 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
   const firebaseConfig = {
     apiKey: "AIzaSyAstijfZ1vjRfcLG0L-mt2Ap313NO7Ak4U",
     authDomain: "flight-log-47ada.firebaseapp.com",
@@ -17,10 +16,8 @@
     messagingSenderId: "317513060685",
     appId: "1:317513060685:web:f698b9795a966586aea704"
   };
-
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-
   window.db = db;
   window.fbFunctions = { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy };
   window.firebaseReady = true;
@@ -28,7 +25,7 @@
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0e1a;--bg2:#111827;--card:#1a2235;--accent:#3b82f6;--text:#e2e8f0;--text2:#94a3b8;--border:#1e3a5f;--red:#ef4444}
+:root{--bg:#0a0e1a;--bg2:#111827;--card:#1a2235;--accent:#3b82f6;--text:#e2e8f0;--text2:#94a3b8;--border:#1e3a5f;--red:#ef4444;--green:#22c55e}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif;min-height:100vh}
 .header{background:var(--bg2);padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
@@ -36,9 +33,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif
 .subtitle{color:var(--text2);font-size:11px;letter-spacing:1px}
 .btn-settings{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px}
 .tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto}
-.tab{flex:1;padding:14px 8px;text-align:center;cursor:pointer;font-size:11px;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;min-width:70px}
+.tab{flex:1;padding:12px 6px;text-align:center;cursor:pointer;font-size:10px;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;min-width:60px}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.tab-icon{font-size:20px;display:block;margin-bottom:4px}
+.tab-icon{font-size:18px;display:block;margin-bottom:3px}
 .content{padding:16px;max-width:600px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
 .card-title{font-size:13px;font-weight:600;letter-spacing:1px;color:var(--text2);margin-bottom:12px}
@@ -51,13 +48,6 @@ textarea{resize:vertical;min-height:80px}
 .btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-danger{background:transparent;color:var(--red);border:1px solid var(--red)}
-.entry{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
-.entry-date{font-size:12px;color:var(--accent);margin-bottom:6px}
-.entry-text{font-size:13px;color:var(--text2);margin-bottom:4px}
-.entry-actions{display:flex;gap:8px;margin-top:10px}
-.entry-btn{flex:1;padding:6px;border-radius:6px;border:none;font-size:12px;cursor:pointer;font-weight:600}
-.edit-btn{background:#1e3a5f;color:var(--accent)}
-.delete-btn{background:#7f1d1d;color:#fca5a5}
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin:2px}
 .badge-red{background:#7f1d1d;color:#fca5a5}
 .progress-bar{background:var(--border);border-radius:4px;height:8px;margin:6px 0}
@@ -67,16 +57,27 @@ textarea{resize:vertical;min-height:80px}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:20px}
 .modal-title{font-size:18px;font-weight:700;margin-bottom:16px}
 .close-btn{float:right;background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer}
-.pdf-drop{border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;margin:12px 0}
+.pdf-drop{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;margin:8px 0}
 .pdf-drop:hover{border-color:var(--accent)}
-.pdf-icon{font-size:40px;margin-bottom:8px}
+.pdf-loaded{border-color:var(--green);background:rgba(34,197,94,0.05)}
 .ai-result{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px;white-space:pre-wrap;font-size:13px;line-height:1.6;display:none}
 .stat-row{display:flex;gap:10px;margin-bottom:16px}
 .stat{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
 .stat-num{font-size:24px;font-weight:700;color:var(--accent)}
 .stat-label{font-size:11px;color:var(--text2)}
 .hidden{display:none}
-.loading{text-align:center;color:var(--text2);padding:20px}
+/* Calendar */
+.calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cal-nav{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:16px}
+.cal-title{font-weight:700;font-size:15px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-name{text-align:center;font-size:10px;color:var(--text2);padding:4px 0}
+.cal-day{text-align:center;padding:8px 4px;border-radius:6px;font-size:13px;cursor:pointer;min-height:36px;display:flex;align-items:center;justify-content:center}
+.cal-day.empty{cursor:default}
+.cal-day.today{border:1px solid var(--accent)}
+.cal-day.has-entry{background:var(--accent);color:#fff;font-weight:700}
+.cal-day.has-entry:hover{background:#2563eb}
+.cal-day:not(.empty):not(.has-entry):hover{background:var(--bg2)}
 </style>
 </head>
 <body>
@@ -89,9 +90,10 @@ textarea{resize:vertical;min-height:80px}
 </div>
 <div class="tabs">
   <div class="tab active" onclick="showTab('flight',this)"><span class="tab-icon">🛫</span>FLIGHT LOG</div>
+  <div class="tab" onclick="showTab('calendar',this)"><span class="tab-icon">📅</span>CALENDAR</div>
   <div class="tab" onclick="showTab('progress',this)"><span class="tab-icon">📊</span>PROGRESS</div>
-  <div class="tab" onclick="showTab('guide',this)"><span class="tab-icon">📚</span>TRAINING GUIDE</div>
-  <div class="tab" onclick="showTab('ai',this)"><span class="tab-icon">🧠</span>AI PLAN</div>
+  <div class="tab" onclick="showTab('guide',this)"><span class="tab-icon">📚</span>GUIDE</div>
+  <div class="tab" onclick="showTab('ai',this)"><span class="tab-icon">🧠</span>AI REPORT</div>
 </div>
 
 <div id="tab-flight" class="content">
@@ -99,6 +101,18 @@ textarea{resize:vertical;min-height:80px}
     <div class="card-title">+ NEW FLIGHT ENTRY</div>
     <label>Date</label>
     <input type="date" id="f-date">
+    <label>Duty Code</label>
+    <select id="f-duty">
+      <option value="">Select Duty Code...</option>
+      <option value="DUAL">DUAL - Dual Instruction</option>
+      <option value="SOLO">SOLO - Solo Flight</option>
+      <option value="GND">GND - Ground Training</option>
+      <option value="SIM">SIM - Simulator</option>
+      <option value="CHECK">CHECK - Check Ride</option>
+      <option value="XC">XC - Cross Country</option>
+      <option value="NIGHT">NIGHT - Night Flying</option>
+      <option value="IFR">IFR - Instrument Flight</option>
+    </select>
     <label>Lesson Learned</label>
     <textarea id="f-lesson" placeholder="Key takeaway from this session..."></textarea>
     <label>What Went Well</label>
@@ -119,7 +133,19 @@ textarea{resize:vertical;min-height:80px}
     <div class="stars" id="stars-maneuver"></div>
     <button class="btn btn-primary" onclick="saveEntry()">SAVE ENTRY</button>
   </div>
-  <div id="entries-list"><div class="loading">Loading entries...</div></div>
+</div>
+
+<div id="tab-calendar" class="content hidden">
+  <div class="card">
+    <div class="calendar-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button class="cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="calendar-grid" id="cal-day-names"></div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+  </div>
+  <p style="color:var(--text2);font-size:12px;text-align:center">🔵 Days with flight entries</p>
 </div>
 
 <div id="tab-progress" class="content hidden">
@@ -139,28 +165,40 @@ textarea{resize:vertical;min-height:80px}
 
 <div id="tab-guide" class="content hidden">
   <div class="card">
-    <div class="card-title">📚 TRAINING GUIDE</div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Upload your flight school manual. The AI study plan will use it as a reference.</p>
-    <div class="pdf-drop" onclick="document.getElementById('pdf-input').click()">
-      <div class="pdf-icon">📄</div>
-      <div id="pdf-name" style="font-weight:600">Drop your PDF training manual here</div>
-      <div style="color:var(--text2);font-size:12px;margin-top:4px">or tap to browse your files</div>
+    <div class="card-title">📚 TRAINING GUIDES (Max 3 PDFs)</div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Upload up to 3 PDF manuals. AI report will use all of them as reference.</p>
+    <div id="pdf-slot-0" class="pdf-drop" onclick="document.getElementById('pdf-input-0').click()">
+      <div style="font-size:30px">📄</div>
+      <div id="pdf-name-0" style="font-weight:600;margin-top:6px">PDF 1 — Tap to upload</div>
     </div>
-    <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="loadPDF(event)">
+    <input type="file" id="pdf-input-0" accept=".pdf" style="display:none" onchange="loadPDF(event,0)">
+    <button class="btn btn-danger" id="clear-pdf-0" style="display:none;margin-top:4px;padding:8px" onclick="clearPDF(0)">Remove PDF 1</button>
+    <div id="pdf-slot-1" class="pdf-drop" onclick="document.getElementById('pdf-input-1').click()">
+      <div style="font-size:30px">📄</div>
+      <div id="pdf-name-1" style="font-weight:600;margin-top:6px">PDF 2 — Tap to upload</div>
+    </div>
+    <input type="file" id="pdf-input-1" accept=".pdf" style="display:none" onchange="loadPDF(event,1)">
+    <button class="btn btn-danger" id="clear-pdf-1" style="display:none;margin-top:4px;padding:8px" onclick="clearPDF(1)">Remove PDF 2</button>
+    <div id="pdf-slot-2" class="pdf-drop" onclick="document.getElementById('pdf-input-2').click()">
+      <div style="font-size:30px">📄</div>
+      <div id="pdf-name-2" style="font-weight:600;margin-top:6px">PDF 3 — Tap to upload</div>
+    </div>
+    <input type="file" id="pdf-input-2" accept=".pdf" style="display:none" onchange="loadPDF(event,2)">
+    <button class="btn btn-danger" id="clear-pdf-2" style="display:none;margin-top:4px;padding:8px" onclick="clearPDF(2)">Remove PDF 3</button>
     <div id="pdf-status"></div>
-    <button class="btn btn-danger" id="clear-pdf-btn" style="display:none;margin-top:8px" onclick="clearPDF()">Remove Manual</button>
   </div>
 </div>
 
 <div id="tab-ai" class="content hidden">
   <div class="card">
-    <div class="card-title">🧠 AI-POWERED STUDY PLAN</div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Evening home study plan — max 1-2 hours per day, 3-day blocks.</p>
-    <button class="btn btn-primary" onclick="generatePlan()" id="gen-btn">▶ Generate 3-Day Study Plan</button>
+    <div class="card-title">🧠 AI FLIGHT ASSESSMENT REPORT</div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">AI analyzes all your flight logs, scores, and uploaded PDFs to generate a comprehensive assessment report.</p>
+    <button class="btn btn-primary" onclick="generatePlan()" id="gen-btn">▶ Generate Assessment Report</button>
     <div class="ai-result" id="ai-result"></div>
   </div>
 </div>
 
+<!-- Settings Modal -->
 <div class="overlay" id="settings-overlay">
   <div class="modal">
     <button class="close-btn" onclick="closeSettings()">×</button>
@@ -173,59 +211,135 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
-<div class="overlay" id="edit-overlay">
+<!-- Entry Detail Modal -->
+<div class="overlay" id="entry-overlay">
   <div class="modal">
-    <button class="close-btn" onclick="closeEdit()">×</button>
-    <div class="modal-title">✏️ Edit Entry</div>
-    <input type="hidden" id="edit-id">
-    <label>Date</label>
-    <input type="date" id="edit-date">
-    <label>Lesson Learned</label>
-    <textarea id="edit-lesson"></textarea>
-    <label>What Went Well</label>
-    <textarea id="edit-good"></textarea>
-    <label>What Needs Improvement</label>
-    <textarea id="edit-improve"></textarea>
-    <label>Technical Notes</label>
-    <textarea id="edit-notes"></textarea>
-    <button class="btn btn-primary" onclick="saveEdit()">SAVE CHANGES</button>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="closeEdit()">CANCEL</button>
+    <button class="close-btn" onclick="closeEntry()">×</button>
+    <div class="modal-title" id="entry-modal-title">✈️ Flight Entry</div>
+    <div id="entry-view-mode">
+      <div id="entry-detail-content"></div>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="switchToEdit()">✏️ Edit Entry</button>
+      <button class="btn btn-danger" style="margin-top:8px" onclick="deleteCurrentEntry()">🗑 Delete Entry</button>
+    </div>
+    <div id="entry-edit-mode" class="hidden">
+      <input type="hidden" id="edit-id">
+      <label>Date</label>
+      <input type="date" id="edit-date">
+      <label>Duty Code</label>
+      <select id="edit-duty">
+        <option value="">Select Duty Code...</option>
+        <option value="DUAL">DUAL - Dual Instruction</option>
+        <option value="SOLO">SOLO - Solo Flight</option>
+        <option value="GND">GND - Ground Training</option>
+        <option value="SIM">SIM - Simulator</option>
+        <option value="CHECK">CHECK - Check Ride</option>
+        <option value="XC">XC - Cross Country</option>
+        <option value="NIGHT">NIGHT - Night Flying</option>
+        <option value="IFR">IFR - Instrument Flight</option>
+      </select>
+      <label>Lesson Learned</label>
+      <textarea id="edit-lesson"></textarea>
+      <label>What Went Well</label>
+      <textarea id="edit-good"></textarea>
+      <label>What Needs Improvement</label>
+      <textarea id="edit-improve"></textarea>
+      <label>Technical Notes</label>
+      <textarea id="edit-notes"></textarea>
+      <label>Landing Score</label>
+      <div class="stars" id="edit-stars-landing"></div>
+      <label>Navigation Score</label>
+      <div class="stars" id="edit-stars-nav"></div>
+      <label>Radio/ATC Score</label>
+      <div class="stars" id="edit-stars-radio"></div>
+      <label>Checklist Score</label>
+      <div class="stars" id="edit-stars-check"></div>
+      <label>Maneuver Score</label>
+      <div class="stars" id="edit-stars-maneuver"></div>
+      <button class="btn btn-primary" onclick="saveEdit()">SAVE CHANGES</button>
+      <button class="btn btn-danger" style="margin-top:8px" onclick="switchToView()">CANCEL</button>
+    </div>
   </div>
 </div>
 
 <script>
 let entries = [];
 let ratings = {};
-let manualText = localStorage.getItem('fl_manual')||'';
-let manualName = localStorage.getItem('fl_manual_name')||'';
+let editRatings = {};
+let manualTexts = [
+  localStorage.getItem('fl_manual_0')||'',
+  localStorage.getItem('fl_manual_1')||'',
+  localStorage.getItem('fl_manual_2')||''
+];
+let manualNames = [
+  localStorage.getItem('fl_manual_name_0')||'',
+  localStorage.getItem('fl_manual_name_1')||'',
+  localStorage.getItem('fl_manual_name_2')||''
+];
 let apiKey = localStorage.getItem('fl_key')||'';
+let currentEntryId = null;
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
 
-const skills = [{id:'landing',label:'Landing'},{id:'nav',label:'Navigation'},{id:'radio',label:'Radio/ATC'},{id:'check',label:'Checklist'},{id:'maneuver',label:'Maneuver'}];
+const skills = [
+  {id:'landing',label:'Landing'},
+  {id:'nav',label:'Navigation'},
+  {id:'radio',label:'Radio/ATC'},
+  {id:'check',label:'Checklist'},
+  {id:'maneuver',label:'Maneuver'}
+];
 
 async function init(){
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  
+  // Init new entry stars
   skills.forEach(s=>{
-    const el = document.getElementById('stars-'+s.id);
     ratings[s.id]=0;
-    for(let i=1;i<=5;i++){
-      const star=document.createElement('span');
-      star.className='star';star.textContent='★';
-      star.onclick=(function(skill,val){return function(){setRating(skill,val)}})(s.id,i);
-      el.appendChild(star);
-    }
+    editRatings[s.id]=0;
+    initStars('stars-'+s.id, s.id, ratings, false);
+    initStars('edit-stars-'+s.id, s.id, editRatings, true);
   });
+  
   document.getElementById('api-key-input').value=apiKey;
-  if(manualName){
-    document.getElementById('pdf-name').textContent='✅ '+manualName;
-    document.getElementById('clear-pdf-btn').style.display='block';
+  
+  // Init PDFs
+  for(let i=0;i<3;i++){
+    if(manualNames[i]){
+      document.getElementById('pdf-name-'+i).textContent='✅ '+manualNames[i];
+      document.getElementById('pdf-slot-'+i).classList.add('pdf-loaded');
+      document.getElementById('clear-pdf-'+i).style.display='block';
+    }
   }
+  
   await loadEntries();
+  renderCalendar();
 }
 
-function setRating(skill,val){
-  ratings[skill]=val;
-  const stars=document.querySelectorAll('#stars-'+skill+' .star');
+function initStars(containerId, skillId, ratingsObj, isEdit){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const star=document.createElement('span');
+    star.className='star';
+    star.textContent='★';
+    star.onclick=(function(sid,val,robj,cid){
+      return function(){
+        robj[sid]=val;
+        updateStarDisplay(cid, val);
+      }
+    })(skillId,i,ratingsObj,containerId);
+    el.appendChild(star);
+  }
+}
+
+function updateStarDisplay(containerId, val){
+  const stars=document.querySelectorAll('#'+containerId+' .star');
   stars.forEach((s,i)=>s.classList.toggle('active',i<val));
+}
+
+function setEditRating(skill, val){
+  editRatings[skill]=val;
+  updateStarDisplay('edit-stars-'+skill, val);
 }
 
 async function loadEntries(){
@@ -234,15 +348,17 @@ async function loadEntries(){
     const q=query(collection(window.db,'entries'),orderBy('date','desc'));
     const snap=await getDocs(q);
     entries=snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderEntries();renderProgress();
+    renderProgress();
+    renderCalendar();
   }catch(e){
-    document.getElementById('entries-list').innerHTML='<p style="color:var(--red)">Error loading: '+e.message+'</p>';
+    console.error('Load error:',e);
   }
 }
 
 async function saveEntry(){
   const entry={
     date:document.getElementById('f-date').value,
+    duty:document.getElementById('f-duty').value,
     lesson:document.getElementById('f-lesson').value,
     good:document.getElementById('f-good').value,
     improve:document.getElementById('f-improve').value,
@@ -258,74 +374,131 @@ async function saveEntry(){
     document.getElementById('f-good').value='';
     document.getElementById('f-improve').value='';
     document.getElementById('f-notes').value='';
-    skills.forEach(s=>setRating(s.id,0));
+    document.getElementById('f-duty').value='';
+    skills.forEach(s=>{ratings[s.id]=0;updateStarDisplay('stars-'+s.id,0);});
     await loadEntries();
     alert('Saved! ✅');
   }catch(e){alert('Error: '+e.message);}
 }
 
-async function deleteEntry(id){
+async function deleteCurrentEntry(){
   if(!confirm('Delete this entry?'))return;
   try{
     const {deleteDoc,doc}=window.fbFunctions;
-    await deleteDoc(doc(window.db,'entries',id));
+    await deleteDoc(doc(window.db,'entries',currentEntryId));
+    closeEntry();
     await loadEntries();
   }catch(e){alert('Error: '+e.message);}
 }
 
-function openEdit(id){
-  const e=entries.find(e=>e.id===id);
+function switchToEdit(){
+  const e=entries.find(e=>e.id===currentEntryId);
   if(!e)return;
-  document.getElementById('edit-id').value=id;
-  document.getElementById('edit-date').value=e.date;
+  document.getElementById('edit-id').value=e.id;
+  document.getElementById('edit-date').value=e.date||'';
+  document.getElementById('edit-duty').value=e.duty||'';
   document.getElementById('edit-lesson').value=e.lesson||'';
   document.getElementById('edit-good').value=e.good||'';
   document.getElementById('edit-improve').value=e.improve||'';
   document.getElementById('edit-notes').value=e.notes||'';
-  document.getElementById('edit-overlay').classList.add('open');
+  skills.forEach(s=>{
+    const val=(e.ratings&&e.ratings[s.id])||0;
+    editRatings[s.id]=val;
+    updateStarDisplay('edit-stars-'+s.id,val);
+  });
+  document.getElementById('entry-view-mode').classList.add('hidden');
+  document.getElementById('entry-edit-mode').classList.remove('hidden');
+}
+
+function switchToView(){
+  document.getElementById('entry-view-mode').classList.remove('hidden');
+  document.getElementById('entry-edit-mode').classList.add('hidden');
 }
 
 async function saveEdit(){
   const id=document.getElementById('edit-id').value;
   const data={
     date:document.getElementById('edit-date').value,
+    duty:document.getElementById('edit-duty').value,
     lesson:document.getElementById('edit-lesson').value,
     good:document.getElementById('edit-good').value,
     improve:document.getElementById('edit-improve').value,
     notes:document.getElementById('edit-notes').value,
+    ratings:{...editRatings}
   };
   try{
     const {updateDoc,doc}=window.fbFunctions;
     await updateDoc(doc(window.db,'entries',id),data);
-    closeEdit();
+    closeEntry();
     await loadEntries();
     alert('Updated! ✅');
   }catch(e){alert('Error: '+e.message);}
 }
 
-function closeEdit(){document.getElementById('edit-overlay').classList.remove('open');}
+function openEntryForDate(dateStr){
+  const e=entries.find(e=>e.date===dateStr);
+  if(!e)return;
+  currentEntryId=e.id;
+  document.getElementById('entry-modal-title').textContent='✈️ '+e.date+(e.duty?' — '+e.duty:'');
+  document.getElementById('entry-detail-content').innerHTML=`
+    ${e.duty?`<p style="color:var(--accent);font-weight:600;margin-bottom:8px">Duty: ${e.duty}</p>`:''}
+    ${e.lesson?`<p style="margin-bottom:6px"><b>Learned:</b> ${e.lesson}</p>`:''}
+    ${e.good?`<p style="margin-bottom:6px"><b>Good:</b> ${e.good}</p>`:''}
+    ${e.improve?`<p style="margin-bottom:6px"><b>Improve:</b> ${e.improve}</p>`:''}
+    ${e.notes?`<p style="margin-bottom:6px"><b>Notes:</b> ${e.notes}</p>`:''}
+    ${e.ratings?`<div style="margin-top:10px">${skills.map(s=>`<div style="font-size:13px;margin-bottom:4px">${s.label}: ${'★'.repeat(e.ratings[s.id]||0)}${'☆'.repeat(5-(e.ratings[s.id]||0))}</div>`).join('')}</div>`:''}
+  `;
+  document.getElementById('entry-view-mode').classList.remove('hidden');
+  document.getElementById('entry-edit-mode').classList.add('hidden');
+  document.getElementById('entry-overlay').classList.add('open');
+}
 
-function renderEntries(){
-  const el=document.getElementById('entries-list');
-  if(!entries.length){el.innerHTML='<p style="color:var(--text2);text-align:center;padding:20px">No flight entries yet</p>';return;}
-  el.innerHTML=entries.map(e=>`
-    <div class="entry">
-      <div class="entry-date">✈️ ${e.date}</div>
-      ${e.lesson?`<div class="entry-text"><b>Learned:</b> ${e.lesson}</div>`:''}
-      ${e.good?`<div class="entry-text"><b>Good:</b> ${e.good}</div>`:''}
-      ${e.improve?`<div class="entry-text"><b>Improve:</b> ${e.improve}</div>`:''}
-      <div class="entry-actions">
-        <button class="entry-btn edit-btn" onclick="openEdit('${e.id}')">✏️ Edit</button>
-        <button class="entry-btn delete-btn" onclick="deleteEntry('${e.id}')">🗑 Delete</button>
-      </div>
-    </div>
-  `).join('');
+function closeEntry(){document.getElementById('entry-overlay').classList.remove('open');}
+
+// Calendar
+function renderCalendar(){
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-title').textContent=months[calMonth]+' '+calYear;
+  
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dnEl=document.getElementById('cal-day-names');
+  dnEl.innerHTML=dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date().toISOString().split('T')[0];
+  
+  const entryDates=new Set(entries.map(e=>e.date));
+  
+  let html='';
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const hasEntry=entryDates.has(dateStr);
+    const isToday=dateStr===today;
+    html+=`<div class="cal-day${hasEntry?' has-entry':''}${isToday?' today':''}" onclick="${hasEntry?`openEntryForDate('${dateStr}')`:''}">`;
+    html+=d;
+    html+=`</div>`;
+  }
+  document.getElementById('calendar-grid').innerHTML=html;
+}
+
+function changeMonth(dir){
+  calMonth+=dir;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendar();
 }
 
 function renderProgress(){
   const total=entries.length;
   document.getElementById('stat-total').textContent=total;
-  if(!total){document.getElementById('stat-avg').textContent='-';document.getElementById('skill-bars').innerHTML='';document.getElementById('weak-areas').innerHTML='<p style="color:var(--text2)">No data yet</p>';return;}
+  if(!total){
+    document.getElementById('stat-avg').textContent='-';
+    document.getElementById('skill-bars').innerHTML='';
+    document.getElementById('weak-areas').innerHTML='<p style="color:var(--text2)">No data yet</p>';
+    return;
+  }
   const skillAvgs={};
   skills.forEach(s=>{
     const vals=entries.map(e=>e.ratings&&e.ratings[s.id]||0).filter(v=>v>0);
@@ -343,10 +516,10 @@ function renderProgress(){
   document.getElementById('weak-areas').innerHTML=weak.length?weak.map(s=>`<span class="badge badge-red">⚠️ ${s.label}: ${skillAvgs[s.id].toFixed(1)}</span>`).join(''):'<p style="color:#86efac">✅ All skills looking good!</p>';
 }
 
-async function loadPDF(e){
+async function loadPDF(e,idx){
   const file=e.target.files[0];if(!file)return;
   const status=document.getElementById('pdf-status');
-  status.innerHTML='<p style="color:var(--accent)">Reading PDF...</p>';
+  status.innerHTML='<p style="color:var(--accent)">Reading PDF '+( idx+1)+'...</p>';
   try{
     const pdfjsLib=window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -358,59 +531,93 @@ async function loadPDF(e){
       const content=await page.getTextContent();
       text+=content.items.map(item=>item.str).join(' ')+'\n';
     }
-    manualText=text.substring(0,15000);
-    manualName=file.name;
-    localStorage.setItem('fl_manual',manualText);
-    localStorage.setItem('fl_manual_name',manualName);
-    document.getElementById('pdf-name').textContent='✅ '+manualName;
-    document.getElementById('clear-pdf-btn').style.display='block';
-    status.innerHTML=`<p style="color:#86efac">✅ Manual loaded! (${pdf.numPages} pages)</p>`;
+    manualTexts[idx]=text.substring(0,12000);
+    manualNames[idx]=file.name;
+    localStorage.setItem('fl_manual_'+idx,manualTexts[idx]);
+    localStorage.setItem('fl_manual_name_'+idx,manualNames[idx]);
+    document.getElementById('pdf-name-'+idx).textContent='✅ '+file.name;
+    document.getElementById('pdf-slot-'+idx).classList.add('pdf-loaded');
+    document.getElementById('clear-pdf-'+idx).style.display='block';
+    status.innerHTML=`<p style="color:#86efac">✅ PDF ${idx+1} loaded! (${pdf.numPages} pages)</p>`;
   }catch(err){status.innerHTML='<p style="color:var(--red)">Error: '+err.message+'</p>';}
 }
 
-function clearPDF(){
-  manualText='';manualName='';
-  localStorage.removeItem('fl_manual');
-  localStorage.removeItem('fl_manual_name');
-  document.getElementById('pdf-name').textContent='Drop your PDF training manual here';
-  document.getElementById('clear-pdf-btn').style.display='none';
-  document.getElementById('pdf-status').innerHTML='';
+function clearPDF(idx){
+  manualTexts[idx]='';
+  manualNames[idx]='';
+  localStorage.removeItem('fl_manual_'+idx);
+  localStorage.removeItem('fl_manual_name_'+idx);
+  document.getElementById('pdf-name-'+idx).textContent='PDF '+(idx+1)+' — Tap to upload';
+  document.getElementById('pdf-slot-'+idx).classList.remove('pdf-loaded');
+  document.getElementById('clear-pdf-'+idx).style.display='none';
 }
 
 async function generatePlan(){
   if(!apiKey){alert('Please enter your API key in Settings first!');openSettings();return;}
   const btn=document.getElementById('gen-btn');
   const result=document.getElementById('ai-result');
-  btn.textContent='⏳ Generating...';btn.disabled=true;
+  btn.textContent='⏳ Generating Report...';btn.disabled=true;
   result.style.display='none';
-  const entrySummary=entries.slice(0,10).map(e=>`Tarih:${e.date}\nÖğrenilen:${e.lesson}\nİyi:${e.good}\nGeliştirilecek:${e.improve}`).join('\n---\n');
-  const prompt=`Sen deneyimli bir uçuş eğitmenisin. Aşağıdaki pilotaj öğrencisinin uçuş notlarını${manualText?' ve okul kılavuzunu':''} analiz et.
 
-ÖNEMLİ KURALLAR:
-- Öğrenci zaten tüm gün uçuş okulunda eğitim alıyor
-- Sadece AKŞAM EV ÇALIŞMASI için plan yap
-- Her gün maksimum 1-2 saat
-- 3 günlük bloklar halinde planla
-- Gündüz uçuş aktivitesi, simulator veya okul aktivitesi ÖNERME
-- Teorik çalışma, kural ezber, video izleme, zihinsel pratik gibi ev çalışmaları öner
-- Genel uçuş tavsiyeleri ve motivasyon ekle
+  const skillAvgs={};
+  skills.forEach(s=>{
+    const vals=entries.map(e=>e.ratings&&e.ratings[s.id]||0).filter(v=>v>0);
+    skillAvgs[s.id]=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0;
+  });
 
-${manualText?`OKUL KILAVUZU:\n${manualText.substring(0,5000)}\n\n`:''}UÇUŞ NOTLARI:\n${entrySummary||'Henüz uçuş kaydı yok, genel bir başlangıç planı hazırla.'}
+  const entrySummary=entries.map(e=>`
+Tarih: ${e.date} | Duty: ${e.duty||'-'}
+Öğrenilen: ${e.lesson||'-'}
+İyi Giden: ${e.good||'-'}
+Geliştirilecek: ${e.improve||'-'}
+Notlar: ${e.notes||'-'}
+Puanlar: İniş:${e.ratings?.landing||0}/5 Nav:${e.ratings?.nav||0}/5 Radyo:${e.ratings?.radio||0}/5 Checklist:${e.ratings?.check||0}/5 Manevra:${e.ratings?.maneuver||0}/5`).join('\n---\n');
 
-Lütfen Türkçe, 3 günlük akşam ev çalışma planı hazırla. Her gün için: konu, aktivite ve süre belirt (toplam maks 1-2 saat/gün).`;
+  const pdfSections = manualTexts.map((t,i)=>t?`\n\n=== PDF ${i+1}: ${manualNames[i]} ===\n${t.substring(0,4000)}`:'').join('');
+
+  const prompt=`Sen deneyimli bir uçuş eğitmenisin. Aşağıdaki pilotaj öğrencisinin tüm uçuş kayıtlarını, puanlarını ve yüklenen eğitim dokümanlarını kapsamlı olarak analiz et.
+
+GENEL BECERI ORTALAMALARI:
+İniş: ${skillAvgs.landing}/5 | Navigasyon: ${skillAvgs.nav}/5 | Radyo/ATC: ${skillAvgs.radio}/5 | Checklist: ${skillAvgs.check}/5 | Manevra: ${skillAvgs.maneuver}/5
+
+TÜM UÇUŞ KAYITLARI:
+${entrySummary||'Henüz kayıt yok.'}
+${pdfSections}
+
+Lütfen aşağıdaki başlıklar altında TÜRKÇE kapsamlı bir değerlendirme raporu hazırla:
+
+---
+## ✅ GÜÇLÜ YÖNLERİM
+(Kayıtlara ve puanlara göre iyi performans gösterilen alanlar)
+
+---
+## ⚠️ GELİŞTİRİLMESİ GEREKEN ALANLAR
+(Zayıf kalan konular, tekrar eden hatalar)
+
+---
+## 📍 MEVCUT EĞİTİM AŞAMASI
+(Entegre Kursu PDF'ini referans alarak şu an hangi aşamada olduğunu değerlendir)
+
+---
+## 🎯 BİR SONRAKİ AŞAMAYA HAZIRLIK
+(Yakında geçilecek aşama için kısa öneriler)
+
+---
+## 📋 GENEL DEĞERLENDİRME ÖZETİ
+(Kısa özet ve motivasyon konuşması ile bitir)`;
 
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:3000,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
     if(data.error){throw new Error(data.error.message);}
     result.textContent=data.content[0].text;
     result.style.display='block';
   }catch(err){alert('Error: '+err.message);}
-  btn.textContent='▶ Generate 3-Day Study Plan';btn.disabled=false;
+  btn.textContent='▶ Generate Assessment Report';btn.disabled=false;
 }
 
 function showTab(tab,el){
