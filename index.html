@@ -1,1268 +1,756 @@
 <!DOCTYPE html>
-
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#ff6b9d">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Hamilelik Günlüğü">
-<title>Hamilelik Günlüğü 🌸</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlightLog - Pilot Training Journal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
   const firebaseConfig = {
-    apiKey: "AIzaSyBwaBNccc7zpBb2HCBTbwC7xz3dNGrzmUw",
-    authDomain: "babylog-3ad8e.firebaseapp.com",
-    projectId: "babylog-3ad8e",
-    storageBucket: "babylog-3ad8e.firebasestorage.app",
-    messagingSenderId: "353756126841",
-    appId: "1:353756126841:web:0fa855a8249a75e6397ea8"
+    apiKey: "AIzaSyAstijfZ1vjRfcLG0L-mt2Ap313NO7Ak4U",
+    authDomain: "flight-log-47ada.firebaseapp.com",
+    projectId: "flight-log-47ada",
+    storageBucket: "flight-log-47ada.firebasestorage.app",
+    messagingSenderId: "317513060685",
+    appId: "1:317513060685:web:f698b9795a966586aea704"
   };
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  window.firebaseDB = db;
-  window.firebaseSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc };
+  window.db = db;
+  window.fbFunctions = { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy };
   window.firebaseReady = true;
-  document.dispatchEvent(new Event('firebaseReady'));
+  window.dispatchEvent(new Event('firebaseReady'));
 </script>
-
 <style>
-:root {
-  --rose:#ff6b9d; --rose-light:#ffa8c5; --rose-pale:#fff0f5;
-  --peach:#ffb347; --peach-light:#ffe4b5;
-  --mint:#6bcfb8; --mint-light:#b8f0e6;
-  --lavender:#c084fc; --lavender-light:#f3e8ff;
-  --sky:#60b4f7; --sky-light:#dbeafe;
-  --cream:#fffbf5; --text-dark:#2d1b33; --text-mid:#6b4c7a; --text-soft:#a07bb5;
-  --shadow-card:0 4px 20px rgba(0,0,0,0.08); --radius:20px; --radius-sm:12px;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text-dark);min-height:100dvh;overflow-x:hidden;padding-bottom:90px}
-
-.app-header{background:linear-gradient(135deg,#ff6b9d 0%,#c084fc 50%,#60b4f7 100%);padding:16px 20px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(255,107,157,0.3)}
-.header-center{text-align:center;flex:1}
-.app-header h1{font-family:'Playfair Display',serif;font-size:1.3rem;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.2)}
-.week-badge{display:inline-block;background:rgba(255,255,255,0.25);backdrop-filter:blur(10px);color:white;font-size:0.7rem;font-weight:700;padding:2px 10px;border-radius:20px;margin-top:3px}
-.settings-btn{width:38px;height:38px;background:rgba(255,255,255,0.2);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;flex-shrink:0}
-
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;display:flex;box-shadow:0 -4px 20px rgba(0,0,0,0.08);z-index:200;border-top:1px solid rgba(255,107,157,0.1);padding-bottom:env(safe-area-inset-bottom)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 2px 6px;cursor:pointer;border:none;background:none;position:relative}
-.nav-item .nav-icon{font-size:1.3rem;line-height:1}
-.nav-item .nav-label{font-size:0.55rem;font-weight:700;margin-top:2px;color:#bbb;letter-spacing:0.3px;text-transform:uppercase}
-.nav-item.active .nav-label{color:var(--rose)}
-.nav-item.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:3px;background:linear-gradient(90deg,var(--rose),var(--lavender));border-radius:0 0 4px 4px}
-
-.page{display:none;padding:16px;animation:fadeUp 0.3s ease}
-.page.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-
-.card{background:white;border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow-card);border:1px solid rgba(255,107,157,0.08)}
-.card-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--text-dark);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.card-title .icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
-
-input[type="date"],input[type="text"],input[type="number"],input[type="password"],textarea,select{width:100%;padding:12px 16px;border:2px solid #f0e6f6;border-radius:var(--radius-sm);font-family:'Nunito',sans-serif;font-size:0.9rem;color:var(--text-dark);background:var(--cream);transition:border-color 0.2s;outline:none}
-input:focus,textarea:focus,select:focus{border-color:var(--rose-light);box-shadow:0 0 0 3px rgba(255,107,157,0.1)}
-textarea{resize:vertical;min-height:80px;line-height:1.5}
-label{display:block;font-size:0.8rem;font-weight:700;color:var(--text-mid);margin-bottom:6px;letter-spacing:0.3px;text-transform:uppercase}
-.field{margin-bottom:14px}
-
-.btn{display:block;width:100%;padding:14px;border:none;border-radius:var(--radius-sm);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;transition:all 0.2s}
-.btn-primary{background:linear-gradient(135deg,var(--rose),var(--lavender));color:white;box-shadow:0 4px 16px rgba(255,107,157,0.35)}
-.btn-primary:active{transform:scale(0.98)}
-.btn-danger{background:linear-gradient(135deg,#ff6b6b,#ee0979);color:white}
-.btn-ghost{background:var(--rose-pale);color:var(--rose);border:2px solid rgba(255,107,157,0.2)}
-.btn-mint{background:var(--mint-light);color:#0d9488;border:2px solid rgba(107,207,184,0.3)}
-.btn-sm{width:auto;display:inline-block;padding:8px 16px;font-size:0.82rem}
-
-.star-row{display:flex;gap:4px}
-.star{font-size:1.6rem;cursor:pointer;transition:transform 0.15s;filter:grayscale(1) opacity(0.4)}
-.star.active{filter:none;transform:scale(1.05)}
-.rating-item{margin-bottom:14px}
-.rating-label{font-size:0.78rem;font-weight:700;color:var(--text-mid);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px}
-
-/* CALENDAR */
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:12px}
-.cal-day-name{text-align:center;font-size:0.65rem;font-weight:800;color:var(--text-soft);padding:4px 0;text-transform:uppercase}
-.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;position:relative}
-.cal-day.has-log{background:linear-gradient(135deg,var(--rose),var(--lavender));color:white;box-shadow:0 3px 10px rgba(255,107,157,0.35);font-weight:800}
-.cal-day.has-photo{background:linear-gradient(135deg,var(--mint),var(--sky));color:white;box-shadow:0 3px 10px rgba(96,180,247,0.35);font-weight:800}
-.cal-day.has-both{background:linear-gradient(135deg,var(--rose),var(--sky));color:white;box-shadow:0 3px 10px rgba(192,132,252,0.35);font-weight:800}
-.cal-day.today{border:2px solid var(--rose);color:var(--rose);font-weight:800}
-.cal-day.today.has-log,.cal-day.today.has-photo,.cal-day.today.has-both{border:2px solid white}
-.cal-day.empty{pointer-events:none}
-.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.cal-nav button{background:var(--rose-pale);border:none;border-radius:10px;padding:8px 14px;font-size:1rem;cursor:pointer;color:var(--rose);font-weight:700}
-.cal-month-label{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--text-dark);font-weight:700}
-
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat-card{border-radius:var(--radius-sm);padding:14px;text-align:center;border:2px solid transparent}
-.stat-card.rose{border-color:rgba(255,107,157,0.2);background:var(--rose-pale)}
-.stat-card.mint{border-color:rgba(107,207,184,0.2);background:var(--mint-light)}
-.stat-card.lavender{border-color:rgba(192,132,252,0.2);background:var(--lavender-light)}
-.stat-card.peach{border-color:rgba(255,179,71,0.2);background:var(--peach-light)}
-.stat-card.sky{border-color:rgba(96,180,247,0.2);background:var(--sky-light)}
-.stat-value{font-size:1.8rem;font-weight:800}
-.stat-label{font-size:0.7rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:0.3px;margin-top:2px}
-
-.chart-bar-wrap{margin-bottom:10px}
-.chart-bar-label{display:flex;justify-content:space-between;font-size:0.78rem;font-weight:700;color:var(--text-mid);margin-bottom:4px}
-.chart-bar-track{height:12px;background:#f0e6f6;border-radius:10px;overflow:hidden}
-.chart-bar-fill{height:100%;border-radius:10px;transition:width 0.8s ease}
-
-.profile-avatar{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--lavender));display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 16px;box-shadow:0 8px 24px rgba(255,107,157,0.35)}
-.profile-field{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f5eef8}
-.profile-field:last-child{border-bottom:none}
-.profile-field .pf-label{font-size:0.8rem;font-weight:700;color:var(--text-soft);text-transform:uppercase}
-.profile-field .pf-value{font-size:0.95rem;font-weight:700;color:var(--text-dark)}
-
-.weight-display{text-align:center;padding:16px;background:linear-gradient(135deg,var(--rose-pale),var(--lavender-light));border-radius:var(--radius-sm)}
-.weight-display .big-num{font-size:2.5rem;font-weight:800;color:var(--rose);font-family:'Playfair Display',serif}
-.weight-display .unit{font-size:0.9rem;color:var(--text-soft);font-weight:600}
-
-/* GALLERY */
-.gallery-tabs{display:flex;gap:8px;margin-bottom:16px}
-.gallery-tab{flex:1;padding:10px;border:2px solid #f0e6f6;border-radius:var(--radius-sm);background:white;font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;cursor:pointer;text-align:center;color:var(--text-soft);transition:all 0.2s}
-.gallery-tab.active{border-color:var(--rose);background:var(--rose-pale);color:var(--rose)}
-
-/* PHOTO ALBUM */
-.album-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.album-card{background:white;border-radius:var(--radius-sm);padding:14px;text-align:center;box-shadow:var(--shadow-card);border:2px solid rgba(255,107,157,0.08);cursor:pointer;transition:all 0.2s}
-.album-card:active{transform:scale(0.97)}
-.album-card .album-icon{font-size:2rem;margin-bottom:6px}
-.album-card .album-name{font-size:0.82rem;font-weight:700;color:var(--text-dark)}
-.album-card .album-count{font-size:0.7rem;color:var(--text-soft);margin-top:2px}
-
-.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.photo-thumb{aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;cursor:pointer}
-.photo-thumb img{width:100%;height:100%;object-fit:cover}
-.photo-thumb .del-btn{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);border:none;border-radius:50%;width:22px;height:22px;color:white;font-size:0.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.photo-date-badge{position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.6);color:white;font-size:0.6rem;font-weight:700;padding:2px 5px;border-radius:6px}
-
-/* All-photos album */
-.all-photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
-.all-photo-item{aspect-ratio:1;border-radius:10px;overflow:hidden;position:relative;cursor:pointer}
-.all-photo-item img{width:100%;height:100%;object-fit:cover}
-.all-photo-date{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));color:white;font-size:0.6rem;font-weight:700;padding:8px 5px 4px;text-align:center}
-
-.doc-upload-area{border:2px dashed rgba(255,107,157,0.4);border-radius:var(--radius);padding:24px 20px;text-align:center;background:var(--rose-pale);cursor:pointer}
-.doc-upload-area .upload-icon{font-size:2.5rem;margin-bottom:8px}
-.doc-upload-area p{font-size:0.85rem;color:var(--text-soft);font-weight:600}
-.doc-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:white;border-radius:var(--radius-sm);margin-bottom:8px;box-shadow:var(--shadow-card);border:1px solid rgba(255,107,157,0.08)}
-.doc-info{flex:1;min-width:0}
-.doc-name{font-weight:700;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.doc-date{font-size:0.72rem;color:var(--text-soft);margin-top:2px}
-.doc-btn{background:none;border:none;font-size:1.1rem;cursor:pointer;padding:4px;border-radius:8px}
-
-/* AI */
-.ai-output{background:linear-gradient(135deg,#fff8fb 0%,#f5f0ff 100%);border-radius:var(--radius);padding:20px;border:2px solid rgba(255,107,157,0.12);line-height:1.75;font-size:0.9rem;color:var(--text-dark)}
-.ai-section-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--rose);margin:16px 0 6px;font-weight:700}
-.ai-output p{margin-bottom:10px}
-.loading-dots{display:inline-flex;gap:4px}
-.loading-dots span{width:8px;height:8px;background:var(--rose);border-radius:50%;animation:bounce 1.2s infinite}
-.loading-dots span:nth-child(2){animation-delay:0.2s}
-.loading-dots span:nth-child(3){animation-delay:0.4s}
-@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
-
-.fruit-badge{background:linear-gradient(135deg,var(--peach),var(--rose-light));color:white;border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:16px}
-.fruit-badge .emoji{font-size:3rem}
-.fruit-badge .fruit-text{font-size:0.85rem;font-weight:700;margin-top:6px}
-
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:flex-end;padding:16px}
-.modal-box{background:white;border-radius:var(--radius) var(--radius) 16px 16px;width:100%;max-height:88vh;overflow-y:auto;padding:24px 20px;animation:slideUp 0.3s ease}
-@keyframes slideUp{from{transform:translateY(100px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-title{font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:16px;color:var(--text-dark)}
-
-.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:none}
-.settings-drawer{position:fixed;top:0;right:0;width:min(340px,90vw);height:100vh;background:white;z-index:700;padding:24px 20px;overflow-y:auto;animation:slideInRight 0.3s ease;box-shadow:-8px 0 32px rgba(0,0,0,0.15);display:none}
-@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
-.settings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-.settings-header h2{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--text-dark)}
-.settings-close{background:var(--rose-pale);border:none;border-radius:50%;width:36px;height:36px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-
-.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--text-dark);color:white;padding:10px 20px;border-radius:30px;font-size:0.85rem;font-weight:700;z-index:1000;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap}
-.toast.show{opacity:1}
-
-.setup-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#ff6b9d,#c084fc,#60b4f7);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px}
-.setup-overlay h2{font-family:'Playfair Display',serif;color:white;font-size:1.8rem;text-align:center;margin-bottom:8px}
-.setup-overlay p{color:rgba(255,255,255,0.85);text-align:center;font-size:0.9rem;margin-bottom:24px}
-.setup-box{background:white;border-radius:var(--radius);padding:24px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto}
-.inline-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:800;display:none;flex-direction:column;align-items:center;justify-content:center}
-.lightbox.open{display:flex}
-.lightbox img{max-width:95vw;max-height:80vh;border-radius:12px;object-fit:contain}
-.lightbox-close{position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:40px;height:40px;color:white;font-size:1.3rem;cursor:pointer}
-.lightbox-date{position:absolute;bottom:30px;right:20px;background:rgba(255,107,157,0.85);color:white;font-size:0.8rem;font-weight:700;padding:6px 12px;border-radius:20px}
-
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-thumb{background:rgba(255,107,157,0.3);border-radius:4px}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0e1a;--bg2:#111827;--card:#1a2235;--accent:#3b82f6;--text:#e2e8f0;--text2:#94a3b8;--border:#1e3a5f;--red:#ef4444;--green:#22c55e}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif;min-height:100vh}
+.header{background:var(--bg2);padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+.logo-icon{background:var(--accent);border-radius:8px;padding:6px;font-size:20px}
+.subtitle{color:var(--text2);font-size:11px;letter-spacing:1px}
+.btn-settings{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{flex:1;padding:12px 6px;text-align:center;cursor:pointer;font-size:10px;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;min-width:60px}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-icon{font-size:18px;display:block;margin-bottom:3px}
+.content{padding:16px;max-width:600px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;letter-spacing:1px;color:var(--text2);margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;margin-top:12px}
+input,textarea,select{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-size:14px;font-family:inherit}
+textarea{resize:vertical;min-height:80px}
+.stars{display:flex;gap:4px;margin:8px 0}
+.star{font-size:24px;cursor:pointer;color:#334155}
+.star.active{color:#f59e0b}
+.btn{width:100%;padding:14px;border-radius:10px;border:none;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red)}
+.progress-bar{background:var(--border);border-radius:4px;height:8px;margin:6px 0}
+.progress-fill{height:100%;border-radius:4px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:20px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px}
+.close-btn{float:right;background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer}
+.pdf-drop{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;margin:8px 0}
+.pdf-drop:hover{border-color:var(--accent)}
+.pdf-loaded{border-color:var(--green);background:rgba(34,197,94,0.05)}
+.ai-result{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px;font-size:13px;line-height:1.7;display:none}
+.ai-section{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.ai-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.ai-section-title{font-size:15px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ai-section-body{color:var(--text2);line-height:1.7}
+.ai-section-body p{margin-bottom:8px}
+.ai-section-body a{color:var(--accent);text-decoration:none}
+.ai-quote{background:rgba(59,130,246,0.08);border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;margin:10px 0;font-style:italic;color:var(--text2);font-size:12px}
+.stat-row{display:flex;gap:10px;margin-bottom:16px}
+.stat{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-num{font-size:24px;font-weight:700;color:var(--accent)}
+.stat-label{font-size:11px;color:var(--text2)}
+.hidden{display:none}
+.duty-custom{margin-top:8px;border-left:3px solid var(--accent);padding-left:10px}
+.calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cal-nav{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:16px}
+.cal-title{font-weight:700;font-size:15px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day-name{text-align:center;font-size:10px;color:var(--text2);padding:4px 0}
+.cal-day{text-align:center;padding:6px 4px;border-radius:6px;font-size:12px;cursor:pointer;min-height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cal-day.empty{cursor:default}
+.cal-day.today{border:1px solid var(--accent)}
+.cal-day.has-entry{background:var(--accent);color:#fff;font-weight:700}
+.cal-day.has-entry:hover{background:#2563eb}
+.cal-day.multi-entry{background:#7c3aed;color:#fff;font-weight:700}
+.cal-day.multi-entry:hover{background:#6d28d9}
+.cal-day:not(.empty):not(.has-entry):not(.multi-entry):hover{background:var(--bg2)}
+.flight-count{font-size:9px;opacity:0.9}
+.day-entry-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer}
+.day-entry-item:hover{border-color:var(--accent)}
+.day-entry-duty{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px}
+.day-entry-preview{font-size:12px;color:var(--text2)}
+.skill-row{margin-bottom:12px}
+.skill-header{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:4px}
+.skill-badge{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-strong{background:#14532d;color:#86efac}
+.badge-medium{background:#713f12;color:#fde68a}
+.badge-weak{background:#7c2d12;color:#fdba74}
+.badge-critical{background:#7f1d1d;color:#fca5a5}
+.weak-area-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:8px}
+.weak-area-item.weak{background:rgba(124,45,18,0.3);border:1px solid #f97316}
+.weak-area-item.critical{background:rgba(127,29,29,0.3);border:1px solid #ef4444}
+.weak-area-icon{font-size:18px}
+.weak-area-label{font-size:14px;font-weight:600}
 </style>
-
 </head>
 <body>
-
-<div class="toast" id="toast"></div>
-
-<!-- LIGHTBOX -->
-
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightboxImg" src="">
-  <div class="lightbox-date" id="lightboxDate"></div>
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">✈️</div>
+    <div><div>FlightLog</div><div class="subtitle">PILOT TRAINING JOURNAL</div></div>
+  </div>
+  <button class="btn-settings" onclick="openSettings()">⚙️ Settings</button>
+</div>
+<div class="tabs">
+  <div class="tab active" onclick="showTab('flight',this)"><span class="tab-icon">🛫</span>FLIGHT LOG</div>
+  <div class="tab" onclick="showTab('calendar',this)"><span class="tab-icon">📅</span>CALENDAR</div>
+  <div class="tab" onclick="showTab('progress',this)"><span class="tab-icon">📊</span>PROGRESS</div>
+  <div class="tab" onclick="showTab('guide',this)"><span class="tab-icon">📚</span>GUIDE</div>
+  <div class="tab" onclick="showTab('ai',this)"><span class="tab-icon">🧠</span>AI REPORT</div>
 </div>
 
-<!-- SETUP -->
-
-<div class="setup-overlay" id="setupOverlay" style="display:none">
-  <div style="font-size:3rem;margin-bottom:16px">🌸</div>
-  <h2>Hoş Geldiniz!</h2>
-  <p>Başlamadan önce birkaç bilgi girelim ✨</p>
-  <div class="setup-box">
-    <div class="field"><label>Anne Adı</label><input type="text" id="s_name" placeholder="Ad Soyad"></div>
-    <div class="inline-grid-2">
-      <div class="field"><label>Yaşı</label><input type="number" id="s_age" placeholder="28"></div>
-      <div class="field"><label>Boyu (cm)</label><input type="number" id="s_height" placeholder="165"></div>
+<div id="tab-flight" class="content">
+  <div class="card">
+    <div class="card-title">+ NEW FLIGHT ENTRY</div>
+    <label>Date</label>
+    <input type="date" id="f-date">
+    <label>Duty Code</label>
+    <select id="f-duty" onchange="toggleCustomDuty('f-duty-custom',this.value)">
+      <option value="">Select Duty Code...</option>
+      <option value="DUAL">DUAL - Dual Instruction</option>
+      <option value="SOLO">SOLO - Solo Flight</option>
+      <option value="GND">GND - Ground Training</option>
+      <option value="SIM">SIM - Simulator</option>
+      <option value="CHECK">CHECK - Check Ride</option>
+      <option value="XC">XC - Cross Country</option>
+      <option value="NIGHT">NIGHT - Night Flying</option>
+      <option value="IFR">IFR - Instrument Flight</option>
+    </select>
+    <div id="f-duty-custom" class="duty-custom hidden">
+      <label>Additional Code / Note</label>
+      <input type="text" id="f-duty-extra" placeholder="e.g. EX-11, P1, circuit training...">
     </div>
-    <div class="field"><label>Gebelik Başlangıç Tarihi</label><input type="date" id="s_startDate" onchange="calcSetupDueDate()"></div>
-    <div class="field"><label>Tahmini Doğum Tarihi</label><input type="date" id="s_dueDate"></div>
-    <div class="field">
-      <label>Bebek Cinsiyeti</label>
-      <select id="s_gender">
-        <option value="unknown">Henüz bilinmiyor 🤍</option>
-        <option value="girl">Kız 💗</option>
-        <option value="boy">Erkek 💙</option>
+    <label>Lesson Learned</label>
+    <textarea id="f-lesson" placeholder="Key takeaway from this session..."></textarea>
+    <label>What Went Well</label>
+    <textarea id="f-good" placeholder="Skills or maneuvers that felt solid..."></textarea>
+    <label>What Needs Improvement</label>
+    <textarea id="f-improve" placeholder="Areas to work on, weak points..."></textarea>
+    <label>Technical Notes</label>
+    <textarea id="f-notes" placeholder="Weather, aircraft, ATC notes..."></textarea>
+    <label>Landing Score</label>
+    <div class="stars" id="stars-landing"></div>
+    <label>Navigation Score</label>
+    <div class="stars" id="stars-nav"></div>
+    <label>Radio/ATC Score</label>
+    <div class="stars" id="stars-radio"></div>
+    <label>Checklist Score</label>
+    <div class="stars" id="stars-check"></div>
+    <label>Maneuver Score</label>
+    <div class="stars" id="stars-maneuver"></div>
+    <button class="btn btn-primary" onclick="saveEntry()">SAVE ENTRY</button>
+  </div>
+</div>
+
+<div id="tab-calendar" class="content hidden">
+  <div class="card">
+    <div class="calendar-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button class="cal-nav" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="calendar-grid" id="cal-day-names"></div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+  </div>
+  <div style="display:flex;gap:12px;justify-content:center;margin-bottom:12px;font-size:12px;color:var(--text2)">
+    <span>🔵 1 flight</span>
+    <span>🟣 2-3 flights</span>
+  </div>
+</div>
+
+<div id="tab-progress" class="content hidden">
+  <div class="stat-row">
+    <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Total Flights</div></div>
+    <div class="stat"><div class="stat-num" id="stat-avg">-</div><div class="stat-label">Avg Score</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">SKILL STATUS</div>
+    <div id="skill-bars"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">WEAK AREAS</div>
+    <div id="weak-areas"></div>
+  </div>
+</div>
+
+<div id="tab-guide" class="content hidden">
+  <div class="card">
+    <div class="card-title">📚 TRAINING GUIDES (Max 3 PDFs)</div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Upload up to 3 PDF manuals. AI report will use all of them as reference.</p>
+    <div id="pdf-slot-0" class="pdf-drop" onclick="document.getElementById('pdf-input-0').click()">
+      <div style="font-size:30px">📄</div>
+      <div id="pdf-name-0" style="font-weight:600;margin-top:6px">PDF 1 — Tap to upload</div>
+    </div>
+    <input type="file" id="pdf-input-0" accept=".pdf" style="display:none" onchange="loadPDF(event,0)">
+    <button class="btn btn-danger" id="clear-pdf-0" style="display:none;margin-top:4px;padding:8px" onclick="clearPDF(0)">Remove PDF 1</button>
+    <div id="pdf-slot-1" class="pdf-drop" onclick="document.getElementById('pdf-input-1').click()">
+      <div style="font-size:30px">📄</div>
+      <div id="pdf-name-1" style="font-weight:600;margin-top:6px">PDF 2 — Tap to upload</div>
+    </div>
+    <input type="file" id="pdf-input-1" accept=".pdf" style="display:none" onchange="loadPDF(event,1)">
+    <button class="btn btn-danger" id="clear-pdf-1" style="display:none;margin-top:4px;padding:8px" onclick="clearPDF(1)">Remove PDF 2</button>
+    <div id="pdf-slot-2" class="pdf-drop" onclick="document.getElementById('pdf-input-2').click()">
+      <div style="font-size:30px">📄</div>
+      <div id="pdf-name-2" style="font-weight:600;margin-top:6px">PDF 3 — Tap to upload</div>
+    </div>
+    <input type="file" id="pdf-input-2" accept=".pdf" style="display:none" onchange="loadPDF(event,2)">
+    <button class="btn btn-danger" id="clear-pdf-2" style="display:none;margin-top:4px;padding:8px" onclick="clearPDF(2)">Remove PDF 3</button>
+    <div id="pdf-status"></div>
+  </div>
+</div>
+
+<div id="tab-ai" class="content hidden">
+  <div class="card">
+    <div class="card-title">🧠 AI FLIGHT ASSESSMENT REPORT</div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">AI analyzes all your flight logs, scores, and uploaded PDFs to generate a comprehensive assessment report in Turkish.</p>
+    <button class="btn btn-primary" onclick="generatePlan()" id="gen-btn">▶ Generate Assessment Report</button>
+    <div class="ai-result" id="ai-result"></div>
+  </div>
+</div>
+
+<div class="overlay" id="settings-overlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeSettings()">×</button>
+    <div class="modal-title">⚙️ Settings</div>
+    <label>Claude API Key</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-...">
+    <p style="font-size:11px;color:var(--text2);margin-top:6px">Get your key at console.anthropic.com</p>
+    <button class="btn btn-primary" onclick="saveSettings()">SAVE</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="clearAll()">Clear All Data</button>
+  </div>
+</div>
+
+<div class="overlay" id="day-overlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeDayModal()">×</button>
+    <div class="modal-title" id="day-modal-title">📅 Flights</div>
+    <div id="day-entries-list"></div>
+  </div>
+</div>
+
+<div class="overlay" id="entry-overlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeEntry()">×</button>
+    <div class="modal-title" id="entry-modal-title">✈️ Flight Entry</div>
+    <div id="entry-view-mode">
+      <div id="entry-detail-content"></div>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="switchToEdit()">✏️ Edit Entry</button>
+      <button class="btn btn-danger" style="margin-top:8px" onclick="deleteCurrentEntry()">🗑 Delete Entry</button>
+    </div>
+    <div id="entry-edit-mode" class="hidden">
+      <input type="hidden" id="edit-id">
+      <label>Date</label>
+      <input type="date" id="edit-date">
+      <label>Duty Code</label>
+      <select id="edit-duty" onchange="toggleCustomDuty('edit-duty-custom',this.value)">
+        <option value="">Select Duty Code...</option>
+        <option value="DUAL">DUAL - Dual Instruction</option>
+        <option value="SOLO">SOLO - Solo Flight</option>
+        <option value="GND">GND - Ground Training</option>
+        <option value="SIM">SIM - Simulator</option>
+        <option value="CHECK">CHECK - Check Ride</option>
+        <option value="XC">XC - Cross Country</option>
+        <option value="NIGHT">NIGHT - Night Flying</option>
+        <option value="IFR">IFR - Instrument Flight</option>
       </select>
-    </div>
-    <button class="btn btn-primary" onclick="saveProfile()">Devam Et 🌟</button>
-  </div>
-</div>
-
-<!-- HEADER -->
-
-<div class="app-header">
-  <div style="width:38px"></div>
-  <div class="header-center">
-    <h1>🌸 Hamilelik Günlüğü</h1>
-    <div class="week-badge" id="weekBadge">Yükleniyor...</div>
-  </div>
-  <button class="settings-btn" onclick="openSettings()">⚙️</button>
-</div>
-
-<!-- SETTINGS DRAWER -->
-
-<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
-<div class="settings-drawer" id="settingsDrawer">
-  <div class="settings-header">
-    <h2>⚙️ Ayarlar</h2>
-    <button class="settings-close" onclick="closeSettings()">✕</button>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--lavender-light)">🤖</div> Claude API Key</div>
-    <p style="font-size:0.82rem;color:var(--text-soft);margin-bottom:14px;line-height:1.5">Bir kez girilince tüm cihazlarda çalışır.</p>
-    <div class="field">
-      <label>API Key</label>
-      <div style="position:relative">
-        <input type="password" id="settings_apikey" placeholder="sk-ant-api03-...">
-        <button onclick="toggleKeyVisibility()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem" id="eyeBtn">👁️</button>
+      <div id="edit-duty-custom" class="duty-custom hidden">
+        <label>Additional Code / Note</label>
+        <input type="text" id="edit-duty-extra" placeholder="e.g. EX-11, P1, circuit training...">
       </div>
+      <label>Lesson Learned</label>
+      <textarea id="edit-lesson"></textarea>
+      <label>What Went Well</label>
+      <textarea id="edit-good"></textarea>
+      <label>What Needs Improvement</label>
+      <textarea id="edit-improve"></textarea>
+      <label>Technical Notes</label>
+      <textarea id="edit-notes"></textarea>
+      <label>Landing Score</label>
+      <div class="stars" id="edit-stars-landing"></div>
+      <label>Navigation Score</label>
+      <div class="stars" id="edit-stars-nav"></div>
+      <label>Radio/ATC Score</label>
+      <div class="stars" id="edit-stars-radio"></div>
+      <label>Checklist Score</label>
+      <div class="stars" id="edit-stars-check"></div>
+      <label>Maneuver Score</label>
+      <div class="stars" id="edit-stars-maneuver"></div>
+      <button class="btn btn-primary" onclick="saveEdit()">SAVE CHANGES</button>
+      <button class="btn btn-danger" style="margin-top:8px" onclick="switchToView()">CANCEL</button>
     </div>
-    <div id="keyStatus" style="font-size:0.8rem;margin-bottom:12px;padding:8px 12px;border-radius:10px;display:none"></div>
-    <button class="btn btn-primary" onclick="saveApiKey()">💾 Kaydet</button>
-  </div>
-  <div class="card" style="margin-top:8px">
-    <div class="card-title"><div class="icon" style="background:var(--peach-light)">ℹ️</div> Nasıl Alınır?</div>
-    <div style="font-size:0.82rem;color:var(--text-mid);line-height:1.8">
-      <p>1. <b>console.anthropic.com</b> adresine git</p>
-      <p>2. Hesap oluştur veya giriş yap</p>
-      <p>3. "API Keys" → "Create Key"</p>
-      <p>4. Key'i buraya yapıştır</p>
-      <p style="margin-top:8px;padding:8px;background:var(--peach-light);border-radius:8px;font-size:0.78rem">💡 Billing → Usage limits bölümünden $5-10 limit koy.</p>
-    </div>
-  </div>
-</div>
-
-<!-- PAGE 1: LOG -->
-
-<div class="page active" id="page-log">
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--rose-pale)">📅</div> Günlük Kayıt</div>
-    <div class="field"><label>Tarih</label><input type="date" id="log_date"></div>
-    <div class="field"><label>Güncel Kilo (kg)</label><input type="number" id="log_weight" placeholder="62.5" step="0.1"></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:#fff3e0">🥗</div> Beslenme Notları</div>
-    <textarea id="log_nutrition" placeholder="Bugün ne yedim, ne içtim? Vitaminlerimi aldım mı?..."></textarea>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--mint-light)">🤸</div> Hareket & Spor</div>
-    <textarea id="log_exercise" placeholder="Yürüyüş, yoga, pilates... Bugün nasıldı?"></textarea>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--sky-light)">💆</div> Fiziksel & Ruhsal Hissiyat</div>
-    <textarea id="log_feelings" placeholder="Nasıl hissettim? Ağrı, bulantı, ruh halim nasıldı?..."></textarea>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--lavender-light)">⭐</div> Günlük Puanlama</div>
-    <div class="rating-item">
-      <div class="rating-label">🥗 Beslenme</div>
-      <div class="star-row" data-field="nutrition">
-        <span class="star" data-val="1">⭐</span><span class="star" data-val="2">⭐</span><span class="star" data-val="3">⭐</span><span class="star" data-val="4">⭐</span><span class="star" data-val="5">⭐</span>
-      </div>
-    </div>
-    <div class="rating-item">
-      <div class="rating-label">🤸 Hareket</div>
-      <div class="star-row" data-field="exercise">
-        <span class="star" data-val="1">⭐</span><span class="star" data-val="2">⭐</span><span class="star" data-val="3">⭐</span><span class="star" data-val="4">⭐</span><span class="star" data-val="5">⭐</span>
-      </div>
-    </div>
-    <div class="rating-item">
-      <div class="rating-label">💪 Fiziksel Durum</div>
-      <div class="star-row" data-field="physical">
-        <span class="star" data-val="1">⭐</span><span class="star" data-val="2">⭐</span><span class="star" data-val="3">⭐</span><span class="star" data-val="4">⭐</span><span class="star" data-val="5">⭐</span>
-      </div>
-    </div>
-    <div class="rating-item">
-      <div class="rating-label">😊 Ruhsal Durum</div>
-      <div class="star-row" data-field="mental">
-        <span class="star" data-val="1">⭐</span><span class="star" data-val="2">⭐</span><span class="star" data-val="3">⭐</span><span class="star" data-val="4">⭐</span><span class="star" data-val="5">⭐</span>
-      </div>
-    </div>
-    <div class="rating-item">
-      <div class="rating-label">👶 Bebek Hareketliliği</div>
-      <div class="star-row" data-field="babyMovement">
-        <span class="star" data-val="1">⭐</span><span class="star" data-val="2">⭐</span><span class="star" data-val="3">⭐</span><span class="star" data-val="4">⭐</span><span class="star" data-val="5">⭐</span>
-      </div>
-    </div>
-  </div>
-  <button class="btn btn-primary" onclick="saveLog()">💾 Kaydı Kaydet</button>
-  <div style="height:8px"></div>
-</div>
-
-<!-- PAGE 2: CALENDAR -->
-
-<div class="page" id="page-calendar">
-  <div class="card">
-    <div class="cal-nav">
-      <button onclick="changeMonth(-1)">‹</button>
-      <div class="cal-month-label" id="calMonthLabel"></div>
-      <button onclick="changeMonth(1)">›</button>
-    </div>
-    <div class="cal-grid" id="calGrid">
-      <div class="cal-day-name">Pzt</div><div class="cal-day-name">Sal</div><div class="cal-day-name">Çrş</div><div class="cal-day-name">Prş</div><div class="cal-day-name">Cum</div><div class="cal-day-name">Cmt</div><div class="cal-day-name">Paz</div>
-    </div>
-  </div>
-  <div class="card" style="padding:14px 20px">
-    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.75rem;font-weight:700;color:var(--text-soft)">
-      <span>🟣 Günlük kayıt</span>
-      <span>🟢 Fotoğraf</span>
-      <span>🔵 İkisi birden</span>
-      <span>🔲 Bugün</span>
-    </div>
-  </div>
-</div>
-
-<!-- PAGE 3: STATS -->
-
-<div class="page" id="page-stats">
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--peach-light)">📊</div> Genel Ortalamalar</div>
-    <div class="stat-grid">
-      <div class="stat-card rose"><div class="stat-value" id="avg_nutrition">—</div><div class="stat-label">🥗 Beslenme</div></div>
-      <div class="stat-card mint"><div class="stat-value" id="avg_exercise">—</div><div class="stat-label">🤸 Hareket</div></div>
-      <div class="stat-card lavender"><div class="stat-value" id="avg_physical">—</div><div class="stat-label">💪 Fiziksel</div></div>
-      <div class="stat-card peach"><div class="stat-value" id="avg_mental">—</div><div class="stat-label">😊 Ruhsal</div></div>
-      <div class="stat-card sky" style="grid-column:1/-1"><div class="stat-value" id="avg_baby">—</div><div class="stat-label">👶 Bebek Hareketliliği</div></div>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--rose-pale)">📈</div> Detaylı Grafik</div>
-    <div id="chartSection"></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--mint-light)">⚖️</div> Kilo Takibi</div>
-    <div id="weightSection"><div style="color:var(--text-soft);font-size:0.85rem">Henüz kilo kaydı yok.</div></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--peach-light)">📋</div> Kayıt İstatistikleri</div>
-    <div class="stat-grid">
-      <div class="stat-card peach"><div class="stat-value" id="totalLogs">0</div><div class="stat-label">Toplam Gün</div></div>
-      <div class="stat-card mint"><div class="stat-value" id="lastLogDate">—</div><div class="stat-label">Son Kayıt</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- PAGE 4: PROFILE -->
-
-<div class="page" id="page-profile">
-  <div class="card" style="text-align:center">
-    <div class="profile-avatar">🤱</div>
-    <div style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:4px" id="profileName">—</div>
-    <div style="color:var(--text-soft);font-size:0.85rem" id="profileSubtitle">Hamile Anne</div>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--rose-pale)">👤</div> Bilgiler</div>
-    <div id="profileFields"></div>
-    <div style="margin-top:16px"><button class="btn btn-ghost" onclick="openEditProfile()">✏️ Bilgileri Düzenle</button></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--mint-light)">⚖️</div> Güncel Kilo</div>
-    <div class="weight-display"><div class="big-num" id="profileWeight">—</div><div class="unit">kg</div></div>
-  </div>
-</div>
-
-<!-- PAGE 5: GALLERY -->
-
-<div class="page" id="page-gallery">
-  <div class="gallery-tabs">
-    <button class="gallery-tab active" id="tabDocs" onclick="switchGalleryTab('docs',this)">📄 Tahliller</button>
-    <button class="gallery-tab" id="tabPhotos" onclick="switchGalleryTab('photos',this)">📸 Fotoğraflar</button>
-  </div>
-
-  <!-- DOCS -->
-
-  <div id="galleryDocs">
-    <div class="card">
-      <div class="card-title"><div class="icon" style="background:var(--sky-light)">📄</div> PDF Ekle</div>
-      <div class="doc-upload-area" onclick="document.getElementById('fileInput').click()">
-        <div class="upload-icon">📁</div>
-        <p>PDF dosyası eklemek için tıklayın</p>
-        <p style="font-size:0.72rem;margin-top:4px">Bu cihazda saklanır (max 10)</p>
-      </div>
-      <input type="file" id="fileInput" accept=".pdf" style="display:none" onchange="addPDF(this)">
-    </div>
-    <div class="card">
-      <div class="card-title"><div class="icon" style="background:var(--peach-light)">📋</div> Belgeler <span id="docCount" style="font-size:0.78rem;color:var(--text-soft);font-weight:600">(0/10)</span></div>
-      <div id="docList"><div style="color:var(--text-soft);font-size:0.85rem;text-align:center;padding:20px">Henüz belge eklenmedi.</div></div>
-    </div>
-  </div>
-
-  <!-- PHOTOS -->
-
-  <div id="galleryPhotos" style="display:none">
-
-```
-<!-- Photo Calendar -->
-<div class="card" id="photoCalCard">
-  <div class="card-title"><div class="icon" style="background:var(--mint-light)">📅</div> Fotoğraf Takvimi</div>
-  <div class="cal-nav">
-    <button onclick="changePhotoMonth(-1)">‹</button>
-    <div class="cal-month-label" id="photoCalMonthLabel"></div>
-    <button onclick="changePhotoMonth(1)">›</button>
-  </div>
-  <div class="cal-grid" id="photoCalGrid">
-    <div class="cal-day-name">Pzt</div><div class="cal-day-name">Sal</div><div class="cal-day-name">Çrş</div><div class="cal-day-name">Prş</div><div class="cal-day-name">Cum</div><div class="cal-day-name">Cmt</div><div class="cal-day-name">Paz</div>
-  </div>
-  <div style="margin-top:10px;font-size:0.72rem;color:var(--text-soft);display:flex;gap:12px">
-    <span>🟢 Fotoğraf var</span><span>🔲 Bugün</span>
-  </div>
-</div>
-
-<!-- All photos album -->
-<div class="card">
-  <div class="card-title"><div class="icon" style="background:var(--rose-pale)">🌸</div> Tüm Fotoğraflar</div>
-  <div class="all-photos-grid" id="allPhotosGrid">
-    <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-soft);font-size:0.85rem">Henüz fotoğraf yok.</div>
-  </div>
-</div>
-
-<!-- Custom Albums -->
-<div class="card" id="albumListCard">
-  <div class="card-title"><div class="icon" style="background:var(--lavender-light)">📁</div> Albümler</div>
-  <div class="album-grid" id="albumGrid"></div>
-  <button class="btn btn-ghost" onclick="createAlbum()">+ Yeni Albüm Oluştur</button>
-</div>
-
-<!-- Album detail view -->
-<div id="albumView" style="display:none">
-  <div class="card">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <button onclick="closeAlbumView()" style="background:var(--rose-pale);border:none;border-radius:10px;padding:6px 14px;color:var(--rose);font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">‹ Geri</button>
-      <div style="font-family:'Playfair Display',serif;font-size:1.1rem" id="albumViewTitle"></div>
-    </div>
-    <!-- Upload with date selector -->
-    <div style="background:var(--rose-pale);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px">
-      <div class="field" style="margin-bottom:10px"><label>Fotoğraf Tarihi</label><input type="date" id="photoUploadDate"></div>
-      <div class="doc-upload-area" onclick="document.getElementById('photoInput').click()" style="padding:14px">
-        <div class="upload-icon" style="font-size:1.8rem">📷</div>
-        <p style="font-size:0.8rem">Fotoğraf ekle (takvim günü başına max 5)</p>
-      </div>
-      <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addPhotos(this)">
-    </div>
-    <div class="photo-grid" id="photoGrid"></div>
-  </div>
-</div>
-```
-
-  </div>
-</div>
-
-<!-- PAGE 6: AI -->
-
-<div class="page" id="page-ai">
-  <div class="card">
-    <div class="card-title"><div class="icon" style="background:var(--lavender-light)">🤖</div> Yapay Zeka Değerlendirmesi</div>
-    <p style="font-size:0.85rem;color:var(--text-soft);margin-bottom:16px">Tüm kayıtların, tahlillerin ve fotoğrafların analiz edilerek sana özel değerlendirme hazırlanır.</p>
-    <button class="btn btn-primary" onclick="runAI()">✨ Değerlendirmeyi Başlat</button>
-  </div>
-  <div id="aiResultCard" style="display:none">
-    <div class="fruit-badge" id="fruitBadge">
-      <div class="emoji">🍇</div>
-      <div class="fruit-text">Bebeğin büyüklüğü yükleniyor...</div>
-    </div>
-    <div class="card">
-      <div class="ai-output" id="aiOutput"></div>
-    </div>
-  </div>
-</div>
-
-<!-- BOTTOM NAV -->
-
-<div class="bottom-nav">
-  <button class="nav-item active" onclick="showPage('log',this)"><span class="nav-icon">📝</span><span class="nav-label">Günlük</span></button>
-  <button class="nav-item" onclick="showPage('calendar',this)"><span class="nav-icon">📅</span><span class="nav-label">Takvim</span></button>
-  <button class="nav-item" onclick="showPage('stats',this)"><span class="nav-icon">📊</span><span class="nav-label">İstatistik</span></button>
-  <button class="nav-item" onclick="showPage('profile',this)"><span class="nav-icon">👤</span><span class="nav-label">Profil</span></button>
-  <button class="nav-item" onclick="showPage('gallery',this)"><span class="nav-icon">🖼️</span><span class="nav-label">Galeri</span></button>
-  <button class="nav-item" onclick="showPage('ai',this)"><span class="nav-icon">🤖</span><span class="nav-label">AI</span></button>
-</div>
-
-<!-- MODAL -->
-
-<div class="modal-overlay" id="modal" style="display:none" onclick="closeModal(event)">
-  <div class="modal-box">
-    <div class="modal-title" id="modalTitle"></div>
-    <div id="modalBody"></div>
   </div>
 </div>
 
 <script>
-// ── STATE ──
-let logs = {}, profile = {}, albums = {}, pdfs = [];
-let ratings = {nutrition:0,exercise:0,physical:0,mental:0,babyMovement:0};
-let calYear, calMonth;
-let photoCalYear, photoCalMonth;
-let currentAlbumId = null;
-const today = new Date();
-const todayStr = today.toISOString().split('T')[0];
+let entries=[];
+let ratings={};
+let editRatings={};
+let manualTexts=[
+  localStorage.getItem('fl_manual_0')||'',
+  localStorage.getItem('fl_manual_1')||'',
+  localStorage.getItem('fl_manual_2')||''
+];
+let manualNames=[
+  localStorage.getItem('fl_manual_name_0')||'',
+  localStorage.getItem('fl_manual_name_1')||'',
+  localStorage.getItem('fl_manual_name_2')||''
+];
+let apiKey=localStorage.getItem('fl_key')||'';
+let currentEntryId=null;
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
 
-// ── INIT ──
-document.addEventListener('firebaseReady', async () => {
-  document.getElementById('log_date').value = todayStr;
-  document.getElementById('photoUploadDate').value = todayStr;
-  calYear = today.getFullYear(); calMonth = today.getMonth();
-  photoCalYear = today.getFullYear(); photoCalMonth = today.getMonth();
-  initStars();
-  loadPDFsFromLocal();
-  await loadAlbumsFromLocal();
-  await loadAll();
-  updateWeekBadge();
-  renderCalendar();
-  renderPhotoCalendar();
-  renderStats();
-  renderProfile();
-  renderAlbumGrid();
-  renderDocList();
-  renderAllPhotos();
-});
+const skills=[
+  {id:'landing',label:'Landing'},
+  {id:'nav',label:'Navigation'},
+  {id:'radio',label:'Radio/ATC'},
+  {id:'check',label:'Checklist'},
+  {id:'maneuver',label:'Maneuver'}
+];
 
-async function loadAll() {
-  try {
-    const {collection,getDocs,doc,getDoc} = window.firebaseSDK;
-    const db = window.firebaseDB;
-    const profSnap = await getDoc(doc(db,'data','profile'));
-    if (profSnap.exists()) { profile = profSnap.data(); }
-    else { document.getElementById('setupOverlay').style.display='flex'; }
-    const logsSnap = await getDocs(collection(db,'logs'));
-    logsSnap.forEach(d => { logs[d.id] = d.data(); });
-    await loadApiKey();
-  } catch(e) { showToast('⚠️ Veri yüklenirken hata oluştu'); }
+function getSkillLevel(avg){
+  if(avg>=4.0) return {label:'Strong',cls:'badge-strong',barColor:'#22c55e',level:'strong'};
+  if(avg>=3.5) return {label:'Medium',cls:'badge-medium',barColor:'#eab308',level:'medium'};
+  if(avg>=3.0) return {label:'Weak',cls:'badge-weak',barColor:'#f97316',level:'weak'};
+  return {label:'Critical',cls:'badge-critical',barColor:'#ef4444',level:'critical'};
 }
 
-// ── PROFILE ──
-function calcSetupDueDate() {
-  const v = document.getElementById('s_startDate').value;
-  if (v) document.getElementById('s_dueDate').value = new Date(new Date(v).getTime()+280*864e5).toISOString().split('T')[0];
+function toggleCustomDuty(divId,val){
+  const el=document.getElementById(divId);
+  if(val) el.classList.remove('hidden');
+  else el.classList.add('hidden');
 }
 
-async function saveProfile() {
-  const name = document.getElementById('s_name').value.trim();
-  const startDate = document.getElementById('s_startDate').value;
-  if (!name||!startDate) { showToast('⚠️ Ad ve başlangıç tarihi zorunlu'); return; }
-  profile = {name, age:document.getElementById('s_age').value, height:document.getElementById('s_height').value, startDate, dueDate:document.getElementById('s_dueDate').value, gender:document.getElementById('s_gender').value};
-  await saveProfileData();
-  document.getElementById('setupOverlay').style.display='none';
-  updateWeekBadge(); renderProfile();
-  showToast('🌸 Profil oluşturuldu!');
-}
-
-async function saveProfileData() {
-  const {doc,setDoc} = window.firebaseSDK;
-  await setDoc(doc(window.firebaseDB,'data','profile'), profile);
-}
-
-function openEditProfile() {
-  document.getElementById('modalTitle').textContent = '✏️ Profili Düzenle';
-  document.getElementById('modalBody').innerHTML = `
-    <div class="field"><label>Ad Soyad</label><input type="text" id="ep_name" value="${profile.name||''}"></div>
-    <div class="inline-grid-2">
-      <div class="field"><label>Yaş</label><input type="number" id="ep_age" value="${profile.age||''}"></div>
-      <div class="field"><label>Boy (cm)</label><input type="number" id="ep_height" value="${profile.height||''}"></div>
-    </div>
-    <div class="field"><label>Gebelik Başlangıcı</label><input type="date" id="ep_start" value="${profile.startDate||''}" onchange="calcEditDueDate()"></div>
-    <div class="field"><label>Tahmini Doğum Tarihi</label><input type="date" id="ep_due" value="${profile.dueDate||''}"></div>
-    <div class="field"><label>Bebek Cinsiyeti</label>
-      <select id="ep_gender">
-        <option value="unknown" ${profile.gender==='unknown'?'selected':''}>Henüz bilinmiyor 🤍</option>
-        <option value="girl" ${profile.gender==='girl'?'selected':''}>Kız 💗</option>
-        <option value="boy" ${profile.gender==='boy'?'selected':''}>Erkek 💙</option>
-      </select>
-    </div>
-    <button class="btn btn-primary" onclick="saveEditProfile()">💾 Kaydet</button>`;
-  openModal();
-}
-
-function calcEditDueDate() {
-  const v = document.getElementById('ep_start').value;
-  if (v) document.getElementById('ep_due').value = new Date(new Date(v).getTime()+280*864e5).toISOString().split('T')[0];
-}
-
-async function saveEditProfile() {
-  profile.name = document.getElementById('ep_name').value.trim();
-  profile.age = document.getElementById('ep_age').value;
-  profile.height = document.getElementById('ep_height').value;
-  profile.startDate = document.getElementById('ep_start').value;
-  profile.dueDate = document.getElementById('ep_due').value;
-  profile.gender = document.getElementById('ep_gender').value;
-  await saveProfileData(); closeModal(); renderProfile(); updateWeekBadge();
-  showToast('✅ Profil güncellendi');
-}
-
-function renderProfile() {
-  document.getElementById('profileName').textContent = profile.name||'—';
-  const week = getPregnancyWeek();
-  document.getElementById('profileSubtitle').textContent = week>0 ? `${week}. Haftada Hamile Anne 🌸` : 'Hamile Anne';
-  const gm = {girl:'Kız 💗',boy:'Erkek 💙',unknown:'Bilinmiyor 🤍'};
-  const fields = [
-    {label:'Yaş', value:profile.age?profile.age+' yaşında':'—'},
-    {label:'Boy', value:profile.height?profile.height+' cm':'—'},
-    {label:'Gebelik Başlangıcı', value:profile.startDate?formatDate(profile.startDate):'—'},
-    {label:'Tahmini Doğum', value:profile.dueDate?formatDate(profile.dueDate):'—'},
-    {label:'Bebek Cinsiyeti', value:gm[profile.gender]||'—'},
-    {label:'Gebelik Haftası', value:week>0?week+'. hafta':'—'},
-  ];
-  document.getElementById('profileFields').innerHTML = fields.map(f=>`<div class="profile-field"><span class="pf-label">${f.label}</span><span class="pf-value">${f.value}</span></div>`).join('');
-  const wl = Object.values(logs).filter(l=>l.weight).sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('profileWeight').textContent = wl.length ? wl[0].weight : '—';
-}
-
-// ── LOGS ──
-function initStars() {
-  document.querySelectorAll('.star-row').forEach(row => {
-    const field = row.dataset.field;
-    row.querySelectorAll('.star').forEach(star => {
-      star.addEventListener('click', () => {
-        const val = parseInt(star.dataset.val);
-        ratings[field] = val;
-        row.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('active', i<val));
-      });
-    });
+async function init(){
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  skills.forEach(s=>{
+    ratings[s.id]=0;
+    editRatings[s.id]=0;
+    initStars('stars-'+s.id,s.id,ratings);
+    initStars('edit-stars-'+s.id,s.id,editRatings);
   });
+  document.getElementById('api-key-input').value=apiKey;
+  for(let i=0;i<3;i++){
+    if(manualNames[i]){
+      document.getElementById('pdf-name-'+i).textContent='✅ '+manualNames[i];
+      document.getElementById('pdf-slot-'+i).classList.add('pdf-loaded');
+      document.getElementById('clear-pdf-'+i).style.display='block';
+    }
+  }
+  await loadEntries();
+  renderCalendar();
 }
 
-function resetForm() {
-  document.getElementById('log_date').value = todayStr;
-  ['log_weight','log_nutrition','log_exercise','log_feelings'].forEach(id => document.getElementById(id).value='');
-  ratings = {nutrition:0,exercise:0,physical:0,mental:0,babyMovement:0};
-  document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+function initStars(containerId,skillId,ratingsObj){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  el.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const star=document.createElement('span');
+    star.className='star';
+    star.textContent='★';
+    star.onclick=(function(sid,val,robj,cid){
+      return function(){robj[sid]=val;updateStarDisplay(cid,val);}
+    })(skillId,i,ratingsObj,containerId);
+    el.appendChild(star);
+  }
 }
 
-async function saveLog() {
-  const date = document.getElementById('log_date').value;
-  if (!date) { showToast('⚠️ Lütfen tarih seç'); return; }
-  const data = {date, weight:document.getElementById('log_weight').value||null, nutrition:document.getElementById('log_nutrition').value, exercise:document.getElementById('log_exercise').value, feelings:document.getElementById('log_feelings').value, ratings:{...ratings}, savedAt:new Date().toISOString()};
-  try {
-    const {doc,setDoc} = window.firebaseSDK;
-    await setDoc(doc(window.firebaseDB,'logs',date), data);
-    logs[date] = data;
-    showToast('✅ Kayıt kaydedildi!');
-    resetForm(); renderCalendar(); renderStats(); renderProfile();
-  } catch(e) { showToast('❌ Kayıt hatası: '+e.message); }
+function updateStarDisplay(containerId,val){
+  const stars=document.querySelectorAll('#'+containerId+' .star');
+  stars.forEach((s,i)=>s.classList.toggle('active',i<val));
 }
 
-// ── CALENDAR ──
-function changeMonth(dir) {
+async function loadEntries(){
+  try{
+    const {collection,getDocs,query,orderBy}=window.fbFunctions;
+    const q=query(collection(window.db,'entries'),orderBy('createdAt','desc'));
+    const snap=await getDocs(q);
+    entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderProgress();
+    renderCalendar();
+  }catch(e){console.error('Load error:',e);}
+}
+
+async function saveEntry(){
+  const dutyBase=document.getElementById('f-duty').value;
+  const dutyExtra=document.getElementById('f-duty-extra').value.trim();
+  const dutyFull=dutyBase+(dutyExtra?' / '+dutyExtra:'');
+  const entry={
+    date:document.getElementById('f-date').value,
+    duty:dutyFull,
+    lesson:document.getElementById('f-lesson').value,
+    good:document.getElementById('f-good').value,
+    improve:document.getElementById('f-improve').value,
+    notes:document.getElementById('f-notes').value,
+    ratings:{...ratings},
+    createdAt:Date.now()
+  };
+  if(!entry.lesson&&!entry.good&&!entry.improve){alert('Please fill in at least one field!');return;}
+  try{
+    const {collection,addDoc}=window.fbFunctions;
+    await addDoc(collection(window.db,'entries'),entry);
+    document.getElementById('f-lesson').value='';
+    document.getElementById('f-good').value='';
+    document.getElementById('f-improve').value='';
+    document.getElementById('f-notes').value='';
+    document.getElementById('f-duty').value='';
+    document.getElementById('f-duty-extra').value='';
+    document.getElementById('f-duty-custom').classList.add('hidden');
+    skills.forEach(s=>{ratings[s.id]=0;updateStarDisplay('stars-'+s.id,0);});
+    await loadEntries();
+    alert('Saved! ✅');
+  }catch(e){alert('Error: '+e.message);}
+}
+
+function openDayModal(dateStr){
+  const dayEntries=entries.filter(e=>e.date===dateStr).sort((a,b)=>a.createdAt-b.createdAt);
+  document.getElementById('day-modal-title').textContent='📅 '+dateStr+' — '+dayEntries.length+' Flight'+(dayEntries.length>1?'s':'');
+  document.getElementById('day-entries-list').innerHTML=dayEntries.map((e,i)=>`
+    <div class="day-entry-item" onclick="openEntry('${e.id}')">
+      <div class="day-entry-duty">Flight ${i+1}${e.duty?' — '+e.duty:''}</div>
+      ${e.lesson?`<div class="day-entry-preview">📖 ${e.lesson.substring(0,60)}${e.lesson.length>60?'...':''}</div>`:''}
+      ${e.good?`<div class="day-entry-preview">✅ ${e.good.substring(0,60)}${e.good.length>60?'...':''}</div>`:''}
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">Tap to view / edit</div>
+    </div>
+  `).join('');
+  document.getElementById('day-overlay').classList.add('open');
+}
+
+function closeDayModal(){document.getElementById('day-overlay').classList.remove('open');}
+
+function openEntry(id){
+  const e=entries.find(e=>e.id===id);
+  if(!e)return;
+  currentEntryId=e.id;
+  document.getElementById('entry-modal-title').textContent='✈️ '+e.date+(e.duty?' — '+e.duty:'');
+  document.getElementById('entry-detail-content').innerHTML=`
+    ${e.duty?`<p style="color:var(--accent);font-weight:600;margin-bottom:8px">Duty: ${e.duty}</p>`:''}
+    ${e.lesson?`<p style="margin-bottom:6px"><b>Learned:</b> ${e.lesson}</p>`:''}
+    ${e.good?`<p style="margin-bottom:6px"><b>Good:</b> ${e.good}</p>`:''}
+    ${e.improve?`<p style="margin-bottom:6px"><b>Improve:</b> ${e.improve}</p>`:''}
+    ${e.notes?`<p style="margin-bottom:6px"><b>Notes:</b> ${e.notes}</p>`:''}
+    ${e.ratings?`<div style="margin-top:10px;font-size:13px">${skills.map(s=>`<div style="margin-bottom:4px">${s.label}: ${'★'.repeat(e.ratings[s.id]||0)}${'☆'.repeat(5-(e.ratings[s.id]||0))}</div>`).join('')}</div>`:''}
+  `;
+  document.getElementById('entry-view-mode').classList.remove('hidden');
+  document.getElementById('entry-edit-mode').classList.add('hidden');
+  document.getElementById('entry-overlay').classList.add('open');
+}
+
+function closeEntry(){document.getElementById('entry-overlay').classList.remove('open');}
+
+async function deleteCurrentEntry(){
+  if(!confirm('Delete this entry?'))return;
+  try{
+    const {deleteDoc,doc}=window.fbFunctions;
+    await deleteDoc(doc(window.db,'entries',currentEntryId));
+    closeEntry();
+    closeDayModal();
+    await loadEntries();
+  }catch(e){alert('Error: '+e.message);}
+}
+
+function switchToEdit(){
+  const e=entries.find(e=>e.id===currentEntryId);
+  if(!e)return;
+  document.getElementById('edit-id').value=e.id;
+  document.getElementById('edit-date').value=e.date||'';
+  const dutyParts=(e.duty||'').split(' / ');
+  document.getElementById('edit-duty').value=dutyParts[0]||'';
+  document.getElementById('edit-duty-extra').value=dutyParts[1]||'';
+  if(dutyParts[0]) document.getElementById('edit-duty-custom').classList.remove('hidden');
+  document.getElementById('edit-lesson').value=e.lesson||'';
+  document.getElementById('edit-good').value=e.good||'';
+  document.getElementById('edit-improve').value=e.improve||'';
+  document.getElementById('edit-notes').value=e.notes||'';
+  skills.forEach(s=>{
+    const val=(e.ratings&&e.ratings[s.id])||0;
+    editRatings[s.id]=val;
+    updateStarDisplay('edit-stars-'+s.id,val);
+  });
+  document.getElementById('entry-view-mode').classList.add('hidden');
+  document.getElementById('entry-edit-mode').classList.remove('hidden');
+}
+
+function switchToView(){
+  document.getElementById('entry-view-mode').classList.remove('hidden');
+  document.getElementById('entry-edit-mode').classList.add('hidden');
+}
+
+async function saveEdit(){
+  const id=document.getElementById('edit-id').value;
+  const dutyBase=document.getElementById('edit-duty').value;
+  const dutyExtra=document.getElementById('edit-duty-extra').value.trim();
+  const dutyFull=dutyBase+(dutyExtra?' / '+dutyExtra:'');
+  const data={
+    date:document.getElementById('edit-date').value,
+    duty:dutyFull,
+    lesson:document.getElementById('edit-lesson').value,
+    good:document.getElementById('edit-good').value,
+    improve:document.getElementById('edit-improve').value,
+    notes:document.getElementById('edit-notes').value,
+    ratings:{...editRatings}
+  };
+  try{
+    const {updateDoc,doc}=window.fbFunctions;
+    await updateDoc(doc(window.db,'entries',id),data);
+    closeEntry();
+    await loadEntries();
+    alert('Updated! ✅');
+  }catch(e){alert('Error: '+e.message);}
+}
+
+function renderCalendar(){
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-title').textContent=months[calMonth]+' '+calYear;
+  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('cal-day-names').innerHTML=dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date().toISOString().split('T')[0];
+  const dateCounts={};
+  entries.forEach(e=>{if(e.date) dateCounts[e.date]=(dateCounts[e.date]||0)+1;});
+  let html='';
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const count=dateCounts[dateStr]||0;
+    const isToday=dateStr===today;
+    const cls=count>1?'multi-entry':count===1?'has-entry':'';
+    html+=`<div class="cal-day${cls?' '+cls:''}${isToday?' today':''}" ${count>0?`onclick="openDayModal('${dateStr}')"`:''}>`;
+    html+=d;
+    if(count>1) html+=`<span class="flight-count">${count}x</span>`;
+    html+=`</div>`;
+  }
+  document.getElementById('calendar-grid').innerHTML=html;
+}
+
+function changeMonth(dir){
   calMonth+=dir;
   if(calMonth>11){calMonth=0;calYear++;}
   if(calMonth<0){calMonth=11;calYear--;}
   renderCalendar();
 }
 
-function renderCalendar() {
-  const mn=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-  document.getElementById('calMonthLabel').textContent=`${mn[calMonth]} ${calYear}`;
-  const grid=document.getElementById('calGrid');
-  while(grid.children.length>7) grid.removeChild(grid.lastChild);
-  let sd=new Date(calYear,calMonth,1).getDay(); sd=sd===0?6:sd-1;
-  const dim=new Date(calYear,calMonth+1,0).getDate();
-  const photoDates = getAllPhotoDates();
-  for(let i=0;i<sd;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
-  for(let d=1;d<=dim;d++){
-    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const el=document.createElement('div'); el.className='cal-day'; el.textContent=d;
-    const hasLog=!!logs[ds], hasPhoto=photoDates.has(ds);
-    if(hasLog&&hasPhoto) el.classList.add('has-both');
-    else if(hasLog) el.classList.add('has-log');
-    else if(hasPhoto) el.classList.add('has-photo');
-    if(ds===todayStr) el.classList.add('today');
-    el.onclick=()=>openDayModal(ds);
-    grid.appendChild(el);
-  }
-}
-
-function openDayModal(dateStr) {
-  const log=logs[dateStr];
-  document.getElementById('modalTitle').textContent=`📅 ${formatDate(dateStr)}`;
-  let body='';
-  if(!log&&!getAllPhotoDates().has(dateStr)){
-    body=`<p style="color:var(--text-soft);margin-bottom:16px">Bu tarih için kayıt yok.</p><button class="btn btn-primary" onclick="goToLogDate('${dateStr}')">+ Kayıt Ekle</button>`;
-  } else {
-    if(log){
-      body+=`<div style="font-size:0.85rem;color:var(--text-mid);line-height:1.6">
-        ${log.weight?`<p><b>⚖️ Kilo:</b> ${log.weight} kg</p>`:''}
-        ${log.nutrition?`<p><b>🥗 Beslenme:</b> ${log.nutrition}</p>`:''}
-        ${log.exercise?`<p><b>🤸 Hareket:</b> ${log.exercise}</p>`:''}
-        ${log.feelings?`<p><b>💆 Hissiyat:</b> ${log.feelings}</p>`:''}
-        ${renderRatingsMini(log.ratings)}
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn btn-ghost btn-sm" onclick="editLog('${dateStr}')">✏️ Düzenle</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteLog('${dateStr}')">🗑️ Sil</button>
-      </div>`;
-    }
-    // Show photos for this date
-    const dayPhotos = getAllPhotosForDate(dateStr);
-    if(dayPhotos.length>0){
-      body+=`<div style="margin-top:12px;font-weight:700;font-size:0.85rem;color:var(--text-mid)">📸 ${dayPhotos.length} Fotoğraf</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
-        ${dayPhotos.map(p=>`<div style="aspect-ratio:1;border-radius:10px;overflow:hidden"><img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover"></div>`).join('')}
-      </div>`;
-    }
-    if(!log){
-      body+=`<button class="btn btn-primary" style="margin-top:12px" onclick="goToLogDate('${dateStr}')">+ Günlük Kayıt Ekle</button>`;
-    }
-  }
-  document.getElementById('modalBody').innerHTML=body;
-  openModal();
-}
-
-function renderRatingsMini(r){
-  if(!r) return '';
-  const items=[{l:'🥗',v:r.nutrition},{l:'🤸',v:r.exercise},{l:'💪',v:r.physical},{l:'😊',v:r.mental},{l:'👶',v:r.babyMovement}];
-  return '<p style="margin-top:8px;font-weight:700">Puanlar:</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">'+items.filter(i=>i.v).map(i=>`<span style="background:var(--rose-pale);padding:3px 8px;border-radius:8px;font-size:0.78rem">${i.l} ${'⭐'.repeat(i.v)}</span>`).join('')+'</div>';
-}
-
-function goToLogDate(ds){closeModal();document.getElementById('log_date').value=ds;showPage('log',document.querySelector('.nav-item'));}
-
-function editLog(dateStr){
-  closeModal();
-  const log=logs[dateStr]; if(!log) return;
-  document.getElementById('log_date').value=dateStr;
-  document.getElementById('log_weight').value=log.weight||'';
-  document.getElementById('log_nutrition').value=log.nutrition||'';
-  document.getElementById('log_exercise').value=log.exercise||'';
-  document.getElementById('log_feelings').value=log.feelings||'';
-  if(log.ratings){
-    ratings={...log.ratings};
-    document.querySelectorAll('.star-row').forEach(row=>{
-      const val=ratings[row.dataset.field]||0;
-      row.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<val));
-    });
-  }
-  showPage('log',document.querySelectorAll('.nav-item')[0]);
-  window.scrollTo(0,0); showToast('✏️ Düzenleme modunda');
-}
-
-async function deleteLog(dateStr){
-  try{
-    const {doc,deleteDoc}=window.firebaseSDK;
-    await deleteDoc(doc(window.firebaseDB,'logs',dateStr));
-    delete logs[dateStr]; closeModal();
-    renderCalendar(); renderStats(); renderProfile();
-    showToast('🗑️ Kayıt silindi');
-  }catch(e){showToast('❌ Silme hatası');}
-}
-
-// ── STATS ──
-function renderStats(){
-  const all=Object.values(logs);
-  document.getElementById('totalLogs').textContent=all.length;
-  if(all.length===0){['avg_nutrition','avg_exercise','avg_physical','avg_mental','avg_baby'].forEach(id=>document.getElementById(id).textContent='—');return;}
-  all.sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('lastLogDate').textContent=formatDateShort(all[0].date);
-  const fields=['nutrition','exercise','physical','mental','babyMovement'];
-  const avgs={};
-  fields.forEach(f=>{const v=all.filter(l=>l.ratings&&l.ratings[f]).map(l=>l.ratings[f]);avgs[f]=v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1):'—';});
-  const ids={nutrition:'avg_nutrition',exercise:'avg_exercise',physical:'avg_physical',mental:'avg_mental',babyMovement:'avg_baby'};
-  Object.entries(ids).forEach(([f,id])=>document.getElementById(id).innerHTML=avgs[f]!=='—'?`${avgs[f]} ⭐`:'—');
-  const colors={nutrition:'#ff6b9d',exercise:'#6bcfb8',physical:'#c084fc',mental:'#ffb347',babyMovement:'#60b4f7'};
-  const labels={nutrition:'🥗 Beslenme',exercise:'🤸 Hareket',physical:'💪 Fiziksel',mental:'😊 Ruhsal',babyMovement:'👶 Bebek'};
-  document.getElementById('chartSection').innerHTML=fields.map(f=>`<div class="chart-bar-wrap"><div class="chart-bar-label"><span>${labels[f]}</span><span>${avgs[f]}/5</span></div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(parseFloat(avgs[f])||0)/5*100}%;background:${colors[f]}"></div></div></div>`).join('');
-  const wl=all.filter(l=>l.weight).sort((a,b)=>a.date.localeCompare(b.date));
-  if(wl.length>0){
-    const diff=(parseFloat(wl[wl.length-1].weight)-parseFloat(wl[0].weight)).toFixed(1);
-    document.getElementById('weightSection').innerHTML=`<div class="stat-grid"><div class="stat-card rose"><div class="stat-value">${wl[wl.length-1].weight}</div><div class="stat-label">Güncel Kilo</div></div><div class="stat-card mint"><div class="stat-value">${diff>0?'+':''}${diff}</div><div class="stat-label">Toplam Değişim</div></div></div>`;
-  } else {document.getElementById('weightSection').innerHTML='<div style="color:var(--text-soft);font-size:0.85rem">Henüz kilo kaydı yok.</div>';}
-}
-
-// ── PDFs ──
-function loadPDFsFromLocal(){try{pdfs=JSON.parse(localStorage.getItem('babylog_pdfs')||'[]');}catch(e){pdfs=[];}}
-function savePDFsToLocal(){localStorage.setItem('babylog_pdfs',JSON.stringify(pdfs));}
-
-function addPDF(input){
-  if(!input.files[0]) return;
-  if(pdfs.length>=10){showToast('⚠️ Maksimum 10 belge');return;}
-  const file=input.files[0];
-  const reader=new FileReader();
-  reader.onload=(e)=>{
-    pdfs.push({name:file.name,dataUrl:e.target.result,date:todayStr,id:Date.now()});
-    savePDFsToLocal(); renderDocList(); showToast('✅ Belge eklendi!');
-  };
-  reader.readAsDataURL(file); input.value='';
-}
-
-function deletePDF(id){pdfs=pdfs.filter(p=>p.id!==id);savePDFsToLocal();renderDocList();showToast('🗑️ Belge silindi');}
-
-function renderDocList(){
-  document.getElementById('docCount').textContent=`(${pdfs.length}/10)`;
-  const list=document.getElementById('docList');
-  if(pdfs.length===0){list.innerHTML='<div style="color:var(--text-soft);font-size:0.85rem;text-align:center;padding:20px">Henüz belge eklenmedi.</div>';return;}
-  list.innerHTML=pdfs.map(p=>`<div class="doc-item"><div style="font-size:1.6rem">📄</div><div class="doc-info"><div class="doc-name">${p.name}</div><div class="doc-date">${formatDate(p.date)}</div></div><div style="display:flex;gap:6px"><a href="${p.dataUrl}" download="${p.name}"><button class="doc-btn">⬇️</button></a><button class="doc-btn" onclick="deletePDF(${p.id})">🗑️</button></div></div>`).join('');
-}
-
-// ── ALBUMS & PHOTOS ──
-// ── IndexedDB for photos ──
-let db_idb = null;
-
-function openIDB(){
-  return new Promise((resolve,reject)=>{
-    if(db_idb){resolve(db_idb);return;}
-    const req=indexedDB.open('babylog_photos',1);
-    req.onupgradeneeded=e=>{
-      const db=e.target.result;
-      if(!db.objectStoreNames.contains('albums')) db.createObjectStore('albums',{keyPath:'id'});
-    };
-    req.onsuccess=e=>{db_idb=e.target.result;resolve(db_idb);};
-    req.onerror=()=>reject(req.error);
-  });
-}
-
-async function loadAlbumsFromLocal(){
-  try{
-    const db=await openIDB();
-    const tx=db.transaction('albums','readonly');
-    const store=tx.objectStore('albums');
-    const all=await new Promise((res,rej)=>{const r=store.getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
-    albums={};
-    all.forEach(a=>albums[a.id]=a);
-  }catch(e){
-    // fallback to localStorage
-    try{albums=JSON.parse(localStorage.getItem('babylog_albums')||'{}');}catch(e2){albums={};}
-  }
-}
-
-async function saveAlbumsToLocal(){
-  try{
-    const db=await openIDB();
-    const tx=db.transaction('albums','readwrite');
-    const store=tx.objectStore('albums');
-    // Clear and rewrite
-    await new Promise((res,rej)=>{const r=store.clear();r.onsuccess=res;r.onerror=rej;});
-    for(const [id,album] of Object.entries(albums)){
-      await new Promise((res,rej)=>{const r=store.put({...album,id});r.onsuccess=res;r.onerror=rej;});
-    }
-  }catch(e){
-    // fallback
-    try{localStorage.setItem('babylog_albums',JSON.stringify(albums));}catch(e2){}
-  }
-}
-
-// Compress image before saving
-function compressImage(file, maxW=1200, quality=0.78){
-  return new Promise((resolve)=>{
-    const reader=new FileReader();
-    reader.onload=(e)=>{
-      const img=new Image();
-      img.onload=()=>{
-        const canvas=document.createElement('canvas');
-        let w=img.width, h=img.height;
-        if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
-        canvas.width=w; canvas.height=h;
-        const ctx=canvas.getContext('2d');
-        ctx.drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg',quality));
-      };
-      img.src=e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function getTotalPhotoCount(){
-  return Object.values(albums).reduce((s,a)=>s+a.photos.length,0);
-}
-
-function getAllPhotoDates(){
-  const dates=new Set();
-  Object.values(albums).forEach(a=>a.photos.forEach(p=>dates.add(p.date)));
-  return dates;
-}
-
-function getAllPhotosForDate(dateStr){
-  const photos=[];
-  Object.values(albums).forEach(a=>a.photos.filter(p=>p.date===dateStr).forEach(p=>photos.push(p)));
-  return photos;
-}
-
-function getAllPhotosSorted(){
-  const all=[];
-  Object.values(albums).forEach(a=>a.photos.forEach(p=>all.push(p)));
-  // deduplicate by id
-  const seen=new Set();
-  return all.filter(p=>{if(seen.has(p.id))return false;seen.add(p.id);return true;}).sort((a,b)=>a.date.localeCompare(b.date));
-}
-
-function renderAllPhotos(){
-  const grid=document.getElementById('allPhotosGrid');
-  if(!grid) return;
-  const all=getAllPhotosSorted();
-  if(all.length===0){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-soft);font-size:0.85rem">Henüz fotoğraf yok.</div>';return;}
-  grid.innerHTML=all.map(p=>`<div class="all-photo-item" onclick="openLightbox('${p.dataUrl}','${p.date}')"><img src="${p.dataUrl}" loading="lazy"><div class="all-photo-date">${formatDateShort(p.date)}</div></div>`).join('');
-}
-
-function renderAlbumGrid(){
-  const grid=document.getElementById('albumGrid');
-  if(!grid) return;
-  if(Object.keys(albums).length===0){
-    grid.innerHTML='<div style="color:var(--text-soft);font-size:0.85rem;margin-bottom:12px">Henüz albüm oluşturulmadı.</div>';
+function renderProgress(){
+  const total=entries.length;
+  document.getElementById('stat-total').textContent=total;
+  if(!total){
+    document.getElementById('stat-avg').textContent='-';
+    document.getElementById('skill-bars').innerHTML='<p style="color:var(--text2)">No data yet</p>';
+    document.getElementById('weak-areas').innerHTML='<p style="color:var(--text2)">No data yet</p>';
     return;
   }
-  grid.innerHTML=Object.entries(albums).map(([id,album])=>`<div class="album-card" onclick="openAlbum('${id}')"><div class="album-icon">${album.icon}</div><div class="album-name">${album.name}</div><div class="album-count">${album.photos.length} fotoğraf</div></div>`).join('');
-}
-
-function createAlbum(){
-  document.getElementById('modalTitle').textContent='📁 Yeni Albüm';
-  document.getElementById('modalBody').innerHTML=`
-    <div class="field"><label>Albüm Adı</label><input type="text" id="newAlbumName" placeholder="Örn: Fizik, Beslenme, Spor..."></div>
-    <div class="field"><label>İkon Seç</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
-        ${['🌸','👶','🤰','🥗','🏃','💪','😊','❤️','⭐','🎀','🍼','📸','🧘','🌟','🎯'].map(ic=>
-          `<button onclick="selectIcon(this,'${ic}')" style="font-size:1.4rem;padding:6px 8px;border:2px solid #f0e6f6;border-radius:10px;background:white;cursor:pointer">${ic}</button>`
-        ).join('')}
-      </div>
-    </div>
-    <input type="hidden" id="selectedIcon" value="🌸">
-    <button class="btn btn-primary" onclick="confirmCreateAlbum()">+ Albüm Oluştur</button>`;
-  openModal();
-}
-
-function selectIcon(btn,ic){
-  document.getElementById('selectedIcon').value=ic;
-  document.querySelectorAll('#modalBody button[onclick^="selectIcon"]').forEach(b=>b.style.borderColor='#f0e6f6');
-  btn.style.borderColor='var(--rose)';
-}
-
-function confirmCreateAlbum(){
-  const name=document.getElementById('newAlbumName').value.trim();
-  const icon=document.getElementById('selectedIcon').value;
-  if(!name){showToast('⚠️ Albüm adı gir');return;}
-  const id='album_'+Date.now();
-  albums[id]={name,icon,photos:[]};
-  saveAlbumsToLocal(); renderAlbumGrid(); closeModal();
-  showToast('✅ Albüm oluşturuldu!');
-}
-
-function openAlbum(id){
-  currentAlbumId=id;
-  document.getElementById('albumViewTitle').textContent=albums[id].icon+' '+albums[id].name;
-  document.getElementById('albumView').style.display='block';
-  document.getElementById('albumListCard').style.display='none';
-  document.getElementById('photoCalCard').style.display='none';
-  document.querySelector('#galleryPhotos > .card').style.display='none'; // all photos card
-  renderPhotoGrid();
-}
-
-function closeAlbumView(){
-  document.getElementById('albumView').style.display='none';
-  document.getElementById('albumListCard').style.display='block';
-  document.getElementById('photoCalCard').style.display='block';
-  document.querySelector('#galleryPhotos > .card').style.display='block';
-  currentAlbumId=null;
-  renderAlbumGrid(); renderAllPhotos(); renderPhotoCalendar();
-}
-
-async function addPhotos(input){
-  if(!input.files.length||!currentAlbumId) return;
-  const dateVal=document.getElementById('photoUploadDate').value||todayStr;
-
-  // Check global 200 photo limit
-  const totalCount=getTotalPhotoCount();
-  if(totalCount>=200){showToast('⚠️ Maksimum 200 fotoğraf limitine ulaşıldı');input.value='';return;}
-
-  // Check max 5 per calendar date (across all albums)
-  const datePhotoCount=Object.values(albums).reduce((s,a)=>s+a.photos.filter(p=>p.date===dateVal).length,0);
-  if(datePhotoCount>=5){showToast('⚠️ Bu tarihe maksimum 5 fotoğraf eklenebilir (takvim günü limiti)');input.value='';return;}
-
-  const canAdd=Math.min(5-datePhotoCount, 200-totalCount, input.files.length);
-  if(canAdd<input.files.length) showToast(`⚠️ Bu tarihe sadece ${5-datePhotoCount} fotoğraf daha eklenebilir`);
-
-  const files=Array.from(input.files).slice(0,canAdd);
-  showToast('⏳ Fotoğraflar sıkıştırılıyor...');
-
-  let loaded=0;
-  for(let idx=0;idx<files.length;idx++){
-    const file=files[idx];
-    try{
-      const compressed=await compressImage(file);
-      albums[currentAlbumId].photos.push({id:Date.now()+idx,dataUrl:compressed,date:dateVal});
-    }catch(e){
-      // fallback without compression
-      const dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});
-      albums[currentAlbumId].photos.push({id:Date.now()+idx,dataUrl,date:dateVal});
-    }
-    loaded++;
-  }
-
-  await saveAlbumsToLocal();
-  renderPhotoGrid();
-  renderAllPhotos();
-  renderPhotoCalendar();
-  renderCalendar();
-  showToast(`✅ ${loaded} fotoğraf eklendi! (Toplam: ${getTotalPhotoCount()}/200)`);
-  input.value='';
-}
-
-function deletePhoto(albumId,photoId){
-  albums[albumId].photos=albums[albumId].photos.filter(p=>p.id!==photoId);
-  saveAlbumsToLocal();
-  renderPhotoGrid();
-  renderAllPhotos();
-  renderPhotoCalendar();
-  renderCalendar();
-  showToast('🗑️ Fotoğraf silindi');
-}
-
-function renderPhotoGrid(){
-  const grid=document.getElementById('photoGrid');
-  const photos=albums[currentAlbumId]?.photos||[];
-  const sorted=[...photos].sort((a,b)=>a.date.localeCompare(b.date));
-  if(sorted.length===0){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-soft);font-size:0.85rem">Henüz fotoğraf yok.</div>';return;}
-  grid.innerHTML=sorted.map(p=>`<div class="photo-thumb"><img src="${p.dataUrl}" onclick="openLightbox('${p.dataUrl}','${p.date}')" loading="lazy"><button class="del-btn" onclick="event.stopPropagation();deletePhoto('${currentAlbumId}',${p.id})">✕</button><div class="photo-date-badge">${formatDateShort(p.date)}</div></div>`).join('');
-}
-
-// Photo calendar
-function changePhotoMonth(dir){
-  photoCalMonth+=dir;
-  if(photoCalMonth>11){photoCalMonth=0;photoCalYear++;}
-  if(photoCalMonth<0){photoCalMonth=11;photoCalYear--;}
-  renderPhotoCalendar();
-}
-
-function renderPhotoCalendar(){
-  const mn=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-  const lbl=document.getElementById('photoCalMonthLabel');
-  if(!lbl) return;
-  lbl.textContent=`${mn[photoCalMonth]} ${photoCalYear}`;
-  const grid=document.getElementById('photoCalGrid');
-  while(grid.children.length>7) grid.removeChild(grid.lastChild);
-  let sd=new Date(photoCalYear,photoCalMonth,1).getDay(); sd=sd===0?6:sd-1;
-  const dim=new Date(photoCalYear,photoCalMonth+1,0).getDate();
-  const photoDates=getAllPhotoDates();
-  for(let i=0;i<sd;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
-  for(let d=1;d<=dim;d++){
-    const ds=`${photoCalYear}-${String(photoCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const el=document.createElement('div'); el.className='cal-day'; el.textContent=d;
-    if(photoDates.has(ds)) el.classList.add('has-photo');
-    if(ds===todayStr) el.classList.add('today');
-    el.onclick=()=>openPhotoDateModal(ds);
-    grid.appendChild(el);
-  }
-}
-
-function openPhotoDateModal(dateStr){
-  const dayPhotos=getAllPhotosForDate(dateStr);
-  document.getElementById('modalTitle').textContent=`📸 ${formatDate(dateStr)}`;
-  if(dayPhotos.length===0){
-    document.getElementById('modalBody').innerHTML='<p style="color:var(--text-soft)">Bu tarihte fotoğraf yok.</p>';
-  } else {
-    document.getElementById('modalBody').innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${dayPhotos.map(p=>`<div style="aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer" onclick="openLightbox('${p.dataUrl}','${p.date}')"><img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>`).join('')}</div>`;
-  }
-  openModal();
-}
-
-function switchGalleryTab(tab,btn){
-  document.querySelectorAll('.gallery-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('galleryDocs').style.display=tab==='docs'?'block':'none';
-  document.getElementById('galleryPhotos').style.display=tab==='photos'?'block':'none';
-}
-
-function openLightbox(src,date){
-  document.getElementById('lightboxImg').src=src;
-  document.getElementById('lightboxDate').textContent=date?formatDate(date):'';
-  document.getElementById('lightbox').classList.add('open');
-}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
-
-// ── SETTINGS ──
-async function loadApiKey(){
-  try{
-    const {doc,getDoc}=window.firebaseSDK;
-    const snap=await getDoc(doc(window.firebaseDB,'data','settings'));
-    if(snap.exists()&&snap.data().claudeApiKey){window.CLAUDE_API_KEY=snap.data().claudeApiKey;showKeyStatus(true);}
-    else showKeyStatus(false);
-  }catch(e){}
-}
-
-async function saveApiKey(){
-  const key=document.getElementById('settings_apikey').value.trim();
-  if(!key||!key.startsWith('sk-')){showToast('⚠️ Geçerli bir API key gir');return;}
-  try{
-    const {doc,setDoc}=window.firebaseSDK;
-    await setDoc(doc(window.firebaseDB,'data','settings'),{claudeApiKey:key});
-    window.CLAUDE_API_KEY=key;
-    document.getElementById('settings_apikey').value='';
-    showKeyStatus(true); showToast('✅ API Key kaydedildi!');
-  }catch(e){showToast('❌ Kayıt hatası: '+e.message);}
-}
-
-function showKeyStatus(hasKey){
-  const el=document.getElementById('keyStatus'); if(!el) return;
-  el.style.display='block';
-  el.style.background=hasKey?'#dcfce7':'#fef9c3';
-  el.style.color=hasKey?'#16a34a':'#ca8a04';
-  el.textContent=hasKey?'✅ API Key kayıtlı ve aktif':'⚠️ API Key henüz girilmemiş';
-}
-
-function toggleKeyVisibility(){
-  const input=document.getElementById('settings_apikey');
-  input.type=input.type==='password'?'text':'password';
-  document.getElementById('eyeBtn').textContent=input.type==='password'?'👁️':'🙈';
-}
-
-function openSettings(){
-  document.getElementById('settingsDrawer').style.display='block';
-  document.getElementById('settingsOverlay').style.display='block';
-  loadApiKey();
-}
-function closeSettings(){
-  document.getElementById('settingsDrawer').style.display='none';
-  document.getElementById('settingsOverlay').style.display='none';
-}
-
-// ── AI ──
-async function runAI(){
-  if(!window.CLAUDE_API_KEY){showToast("⚠️ Önce Ayarlar'dan API Key gir");openSettings();return;}
-  const week=getPregnancyWeek();
-  const allLogs=Object.values(logs).sort((a,b)=>b.date.localeCompare(a.date));
-  const logsText=allLogs.slice(0,20).map(l=>{const r=l.ratings||{};return `Tarih: ${l.date}\nKilo: ${l.weight||'girilmedi'} kg\nBeslenme: ${l.nutrition||'-'}\nHareket: ${l.exercise||'-'}\nHissiyat: ${l.feelings||'-'}\nPuanlar: Beslenme ${r.nutrition||0}/5, Hareket ${r.exercise||0}/5, Fiziksel ${r.physical||0}/5, Ruhsal ${r.mental||0}/5, Bebek ${r.babyMovement||0}/5`;}).join('\n\n');
-  const allPhotos=getAllPhotosSorted();
-  const albumSummary=Object.values(albums).map(a=>`${a.name}: ${a.photos.length} fotoğraf`).join(', ');
-  const pdfNames=pdfs.map(p=>p.name).join(', ');
-  const gm={girl:'kız',boy:'erkek',unknown:'henüz bilinmiyor'};
-
-  const prompt=`Sen şefkatli, bilgili ve neşeli bir gebelik asistanısın. Kullanıcı Türk bir hamile kadın.\n\nProfil:\n- Ad: ${profile.name||'Anne'}\n- Gebelik haftası: ${week}. hafta\n- Bebek cinsiyeti: ${gm[profile.gender]||'bilinmiyor'}\n- Tahmini doğum: ${profile.dueDate?formatDate(profile.dueDate):'belirtilmemiş'}\n\nTüm log kayıtları (${allLogs.length} gün):\n${logsText||'Henüz log kaydı yok'}\n\nYüklenen tahlil/test belgeleri: ${pdfs.length>0?pdfNames:'Yok'}\nGaleri: ${allPhotos.length} fotoğraf toplam (${albumSummary||'albüm yok'})\n\nEğer verilere göre tahmini doğum tarihinde güncelleme gerekiyorsa [DUE_DATE: YYYY-MM-DD] formatında yaz.\n\nŞu başlıklar altında samimi, kısa ve nazik değerlendirme yaz. Her bölüm 1-2 paragraf. Başlıklarda hiçbir sembol (*, #, -, >) kullanma:\n\nGenel Durum Değerlendirmesi\nBeslenme ve Hareket Değerlendirmesi\nBu Haftanın Öne Çıkanları\nÖnümüzdeki Haftalar İçin Bilgiler\nKişisel Gelişim Önerisi\nMotivasyon Konuşması\n\nBebeğin bu haftada hangi meyve/sebze büyüklüğünde olduğunu başa [FRUIT: emoji, açıklama] formatında yaz.`;
-
-  document.getElementById('aiResultCard').style.display='block';
-  document.getElementById('aiOutput').innerHTML='<div style="text-align:center;padding:20px"><div class="loading-dots"><span></span><span></span><span></span></div><p style="margin-top:12px;color:var(--text-soft);font-size:0.85rem">Tüm veriler analiz ediliyor...</p></div>';
-
-  // Include recent photos for vision
-  const userContent=[];
-  allPhotos.slice(-4).forEach(p=>{
-    try{
-      const base64=p.dataUrl.split(',')[1];
-      const mt=p.dataUrl.split(';')[0].split(':')[1];
-      if(base64&&mt) userContent.push({type:'image',source:{type:'base64',media_type:mt,data:base64}});
-    }catch(e){}
+  const skillAvgs={};
+  skills.forEach(s=>{
+    const vals=entries.map(e=>e.ratings&&e.ratings[s.id]||0).filter(v=>v>0);
+    skillAvgs[s.id]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   });
-  userContent.push({type:'text',text:prompt});
+  const overall=Object.values(skillAvgs).filter(v=>v>0);
+  document.getElementById('stat-avg').textContent=overall.length?(overall.reduce((a,b)=>a+b,0)/overall.length).toFixed(1):'-';
+
+  document.getElementById('skill-bars').innerHTML=skills.map(s=>{
+    const avg=skillAvgs[s.id];
+    if(avg===0) return '';
+    const level=getSkillLevel(avg);
+    return `
+      <div class="skill-row">
+        <div class="skill-header">
+          <span>${s.label}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:13px">${avg.toFixed(1)}/5</span>
+            <span class="skill-badge ${level.cls}">${level.label}</span>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${avg*20}%;background:${level.barColor}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const weakSkills=skills.filter(s=>{
+    const avg=skillAvgs[s.id];
+    return avg>0&&avg<3.5;
+  }).sort((a,b)=>skillAvgs[a.id]-skillAvgs[b.id]);
+
+  if(!weakSkills.length){
+    document.getElementById('weak-areas').innerHTML='<p style="color:#86efac">✅ All skills are Medium or above!</p>';
+    return;
+  }
+
+  document.getElementById('weak-areas').innerHTML=weakSkills.map(s=>{
+    const avg=skillAvgs[s.id];
+    const isCritical=avg<3.0;
+    return `
+      <div class="weak-area-item ${isCritical?'critical':'weak'}">
+        <span class="weak-area-icon">${isCritical?'🚨':'⚠️'}</span>
+        <span class="weak-area-label">${s.label}</span>
+        <span class="skill-badge ${isCritical?'badge-critical':'badge-weak'}" style="margin-left:auto">${isCritical?'Critical':'Weak'}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadPDF(e,idx){
+  const file=e.target.files[0];if(!file)return;
+  const status=document.getElementById('pdf-status');
+  status.innerHTML='<p style="color:var(--accent)">Reading PDF '+(idx+1)+'...</p>';
+  try{
+    const pdfjsLib=window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const ab=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument(ab).promise;
+    let text='';
+    for(let i=1;i<=Math.min(pdf.numPages,20);i++){
+      const page=await pdf.getPage(i);
+      const content=await page.getTextContent();
+      text+=content.items.map(item=>item.str).join(' ')+'\n';
+    }
+    manualTexts[idx]=text.substring(0,12000);
+    manualNames[idx]=file.name;
+    localStorage.setItem('fl_manual_'+idx,manualTexts[idx]);
+    localStorage.setItem('fl_manual_name_'+idx,manualNames[idx]);
+    document.getElementById('pdf-name-'+idx).textContent='✅ '+file.name;
+    document.getElementById('pdf-slot-'+idx).classList.add('pdf-loaded');
+    document.getElementById('clear-pdf-'+idx).style.display='block';
+    status.innerHTML=`<p style="color:#86efac">✅ PDF ${idx+1} loaded! (${pdf.numPages} pages)</p>`;
+  }catch(err){status.innerHTML='<p style="color:var(--red)">Error: '+err.message+'</p>';}
+}
+
+function clearPDF(idx){
+  manualTexts[idx]='';manualNames[idx]='';
+  localStorage.removeItem('fl_manual_'+idx);
+  localStorage.removeItem('fl_manual_name_'+idx);
+  document.getElementById('pdf-name-'+idx).textContent='PDF '+(idx+1)+' — Tap to upload';
+  document.getElementById('pdf-slot-'+idx).classList.remove('pdf-loaded');
+  document.getElementById('clear-pdf-'+idx).style.display='none';
+}
+
+async function generatePlan(){
+  if(!apiKey){alert('Please enter your API key in Settings first!');openSettings();return;}
+  const btn=document.getElementById('gen-btn');
+  const result=document.getElementById('ai-result');
+  btn.textContent='⏳ Generating Report...';btn.disabled=true;
+  result.style.display='none';
+  result.innerHTML='';
+
+  const skillAvgs={};
+  skills.forEach(s=>{
+    const vals=entries.map(e=>e.ratings&&e.ratings[s.id]||0).filter(v=>v>0);
+    skillAvgs[s.id]=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0;
+  });
+
+  const entrySummary=entries.map(e=>`
+Tarih: ${e.date} | Duty: ${e.duty||'-'}
+Öğrenilen: ${e.lesson||'-'}
+İyi Giden: ${e.good||'-'}
+Geliştirilecek: ${e.improve||'-'}
+Notlar: ${e.notes||'-'}
+Puanlar — İniş:${e.ratings?.landing||0}/5 Nav:${e.ratings?.nav||0}/5 Radyo:${e.ratings?.radio||0}/5 Checklist:${e.ratings?.check||0}/5 Manevra:${e.ratings?.maneuver||0}/5`).join('\n---\n');
+
+  const pdfSections=manualTexts.map((t,i)=>t?`\n\n=== PDF ${i+1}: ${manualNames[i]} ===\n${t.substring(0,4000)}`:'').join('');
+
+  const prompt=`Sen deneyimli ve samimi bir uçuş eğitmenisin. Öğrencinin uçuş günlüğünü ve eğitim dokümanlarını inceleyerek kısa, akıcı ve sohbet tadında bir değerlendirme raporu yazacaksın.
+
+KURALLAR:
+- Başlıkları temiz yaz, yıldız (*) veya hashtag (#) işareti KULLANMA
+- Her bölüm 2-4 kısa paragraf olsun, tekrar etme
+- Gerekirse görsel/video linki ekle (YouTube, skyvector vb.)
+- Yüklenen PDF'lerden en az bir alıntı yap (tırnak içinde)
+- Emoji kullanabilirsin ama abartma
+- Dil: akıcı Türkçe, nazik ve öğretici
+
+GENEL BECERİ ORTALAMALARI:
+İniş: ${skillAvgs.landing}/5 | Navigasyon: ${skillAvgs.nav}/5 | Radyo/ATC: ${skillAvgs.radio}/5 | Checklist: ${skillAvgs.check}/5 | Manevra: ${skillAvgs.maneuver}/5
+
+UÇUŞ KAYITLARI:
+${entrySummary||'Henüz kayıt yok — genel başlangıç değerlendirmesi yap.'}
+${pdfSections}
+
+Raporu şu 5 başlık altında yaz. Her başlığı büyük harfle yaz ve altına paragraflarla devam et:
+
+✅ GÜÇLÜ YÖNLERİN
+
+⚠️ GELİŞTİRMEN GEREKEN ALANLAR
+
+📍 ŞU ANKİ EĞİTİM AŞAMAN
+
+🎯 BİR SONRAKİ AŞAMAYA HAZIRLIK
+
+💬 GENEL DEĞERLENDİRME`;
 
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':window.CLAUDE_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:userContent}]})
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
-    const text=data.content?.[0]?.text||'Yanıt alınamadı.';
-    const fruitMatch=text.match(/\[FRUIT:\s*([^,]+),\s*([^\]]+)\]/);
-    let clean=text.replace(/\[FRUIT:[^\]]+\]/g,'').trim();
-    const dueDateMatch=clean.match(/\[DUE_DATE:\s*(\d{4}-\d{2}-\d{2})\]/);
-    if(dueDateMatch){
-      const nd=dueDateMatch[1]; clean=clean.replace(/\[DUE_DATE:[^\]]+\]/g,'').trim();
-      if(nd!==profile.dueDate){profile.dueDate=nd;await saveProfileData();renderProfile();showToast('📅 Tahmini doğum tarihi güncellendi!');}
-    }
-    if(fruitMatch) document.getElementById('fruitBadge').innerHTML=`<div class="emoji">${fruitMatch[1].trim()}</div><div class="fruit-text">Bebeğin büyüklüğü: ${fruitMatch[2].trim()}</div>`;
-    const headings=['Genel Durum','Beslenme','Bu Hafta','Önümüzdeki','Kişisel Gelişim','Motivasyon'];
-    let html='';
-    clean.split('\n').filter(l=>l.trim()).forEach(line=>{
-      const t=line.trim();
-      html+=headings.some(h=>t.startsWith(h))?`<div class="ai-section-title">${t}</div>`:`<p>${t}</p>`;
-    });
-    document.getElementById('aiOutput').innerHTML=html||`<p>${clean}</p>`;
-  }catch(e){
-    document.getElementById('aiOutput').innerHTML='<p style="color:red">❌ AI yanıtı alınamadı. API key ve internet bağlantısını kontrol edin.</p>';
-  }
+    if(data.error){throw new Error(data.error.message);}
+
+    // Format the response nicely
+    const text=data.content[0].text;
+    const sections=text.split(/\n(?=✅|⚠️|📍|🎯|💬)/);
+    
+    result.innerHTML=sections.map(section=>{
+      const lines=section.trim().split('\n');
+      const title=lines[0];
+      const body=lines.slice(1).join('\n').trim();
+      
+      // Format body: detect quotes and links
+      let formattedBody=body
+        .replace(/\n\n/g,'</p><p>')
+        .replace(/\n/g,'<br>')
+        .replace(/"([^"]+)"/g,'<div class="ai-quote">$1</div>')
+        .replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank">🔗 $1</a>');
+
+      return `<div class="ai-section">
+        <div class="ai-section-title">${title}</div>
+        <div class="ai-section-body"><p>${formattedBody}</p></div>
+      </div>`;
+    }).join('');
+
+    result.style.display='block';
+  }catch(err){alert('Error: '+err.message);}
+  btn.textContent='▶ Generate Assessment Report';btn.disabled=false;
 }
 
-// ── HELPERS ──
-function getPregnancyWeek(){
-  if(!profile.startDate) return 0;
-  return Math.max(0,Math.floor((today-new Date(profile.startDate))/(1000*60*60*24*7)));
+function showTab(tab,el){
+  document.querySelectorAll('.content').forEach(e=>e.classList.add('hidden'));
+  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  el.classList.add('active');
 }
 
-function updateWeekBadge(){
-  const week=getPregnancyWeek();
-  const icon={girl:'💗',boy:'💙',unknown:'🤍'}[profile.gender]||'🌸';
-  document.getElementById('weekBadge').textContent=week>0?`${week}. Hafta ${icon}`:'Hamilelik takip uygulaması 🌸';
-}
+function openSettings(){document.getElementById('settings-overlay').classList.add('open');}
+function closeSettings(){document.getElementById('settings-overlay').classList.remove('open');}
+function saveSettings(){apiKey=document.getElementById('api-key-input').value.trim();localStorage.setItem('fl_key',apiKey);closeSettings();alert('Saved! ✅');}
+function clearAll(){if(confirm('All data will be deleted!')){localStorage.clear();closeSettings();}}
 
-function formatDate(dateStr){
-  if(!dateStr) return '—';
-  const [y,m,d]=dateStr.split('-');
-  return `${parseInt(d)} ${['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'][parseInt(m)-1]} ${y}`;
-}
-
-function formatDateShort(dateStr){
-  if(!dateStr) return '—';
-  const [y,m,d]=dateStr.split('-');
-  return `${d}/${m}`;
-}
-
-function showPage(name,btn){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  if(btn) btn.classList.add('active');
-  if(name==='stats') renderStats();
-  if(name==='calendar') renderCalendar();
-  if(name==='profile') renderProfile();
-  if(name==='gallery'){renderAlbumGrid();renderDocList();renderAllPhotos();renderPhotoCalendar();}
-}
-
-function openModal(){document.getElementById('modal').style.display='flex';}
-function closeModal(e){if(!e||e.target===document.getElementById('modal'))document.getElementById('modal').style.display='none';}
-
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
-}
+window.addEventListener('firebaseReady',init);
+if(window.firebaseReady) init();
 </script>
-
 </body>
 </html>
