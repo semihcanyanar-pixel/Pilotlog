@@ -72,12 +72,20 @@ textarea{resize:vertical;min-height:80px}
 .cal-title{font-weight:700;font-size:15px}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .cal-day-name{text-align:center;font-size:10px;color:var(--text2);padding:4px 0}
-.cal-day{text-align:center;padding:8px 4px;border-radius:6px;font-size:13px;cursor:pointer;min-height:36px;display:flex;align-items:center;justify-content:center}
+.cal-day{text-align:center;padding:6px 4px;border-radius:6px;font-size:12px;cursor:pointer;min-height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .cal-day.empty{cursor:default}
 .cal-day.today{border:1px solid var(--accent)}
 .cal-day.has-entry{background:var(--accent);color:#fff;font-weight:700}
 .cal-day.has-entry:hover{background:#2563eb}
-.cal-day:not(.empty):not(.has-entry):hover{background:var(--bg2)}
+.cal-day.multi-entry{background:#7c3aed;color:#fff;font-weight:700}
+.cal-day.multi-entry:hover{background:#6d28d9}
+.cal-day:not(.empty):not(.has-entry):not(.multi-entry):hover{background:var(--bg2)}
+.flight-count{font-size:9px;opacity:0.9}
+.day-entries-list{margin-top:8px}
+.day-entry-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer}
+.day-entry-item:hover{border-color:var(--accent)}
+.day-entry-duty{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px}
+.day-entry-preview{font-size:12px;color:var(--text2)}
 </style>
 </head>
 <body>
@@ -149,7 +157,10 @@ textarea{resize:vertical;min-height:80px}
     <div class="calendar-grid" id="cal-day-names"></div>
     <div class="calendar-grid" id="calendar-grid"></div>
   </div>
-  <p style="color:var(--text2);font-size:12px;text-align:center">🔵 Days with flight entries — tap to view</p>
+  <div style="display:flex;gap:12px;justify-content:center;margin-bottom:12px;font-size:12px;color:var(--text2)">
+    <span>🔵 1 flight</span>
+    <span>🟣 2-3 flights</span>
+  </div>
 </div>
 
 <div id="tab-progress" class="content hidden">
@@ -215,7 +226,16 @@ textarea{resize:vertical;min-height:80px}
   </div>
 </div>
 
-<!-- Entry Modal -->
+<!-- Day Entries Modal -->
+<div class="overlay" id="day-overlay">
+  <div class="modal">
+    <button class="close-btn" onclick="closeDayModal()">×</button>
+    <div class="modal-title" id="day-modal-title">📅 Flights</div>
+    <div id="day-entries-list"></div>
+  </div>
+</div>
+
+<!-- Entry Detail Modal -->
 <div class="overlay" id="entry-overlay">
   <div class="modal">
     <button class="close-btn" onclick="closeEntry()">×</button>
@@ -296,7 +316,7 @@ const skills=[
   {id:'maneuver',label:'Maneuver'}
 ];
 
-function toggleCustomDuty(divId, val){
+function toggleCustomDuty(divId,val){
   const el=document.getElementById(divId);
   if(val) el.classList.remove('hidden');
   else el.classList.add('hidden');
@@ -345,7 +365,7 @@ function updateStarDisplay(containerId,val){
 async function loadEntries(){
   try{
     const {collection,getDocs,query,orderBy}=window.fbFunctions;
-    const q=query(collection(window.db,'entries'),orderBy('date','desc'));
+    const q=query(collection(window.db,'entries'),orderBy('createdAt','desc'));
     const snap=await getDocs(q);
     entries=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderProgress();
@@ -384,12 +404,49 @@ async function saveEntry(){
   }catch(e){alert('Error: '+e.message);}
 }
 
+function openDayModal(dateStr){
+  const dayEntries=entries.filter(e=>e.date===dateStr).sort((a,b)=>a.createdAt-b.createdAt);
+  document.getElementById('day-modal-title').textContent='📅 '+dateStr+' — '+dayEntries.length+' Flight'+(dayEntries.length>1?'s':'');
+  document.getElementById('day-entries-list').innerHTML=dayEntries.map((e,i)=>`
+    <div class="day-entry-item" onclick="openEntry('${e.id}')">
+      <div class="day-entry-duty">Flight ${i+1}${e.duty?' — '+e.duty:''}</div>
+      ${e.lesson?`<div class="day-entry-preview">📖 ${e.lesson.substring(0,60)}${e.lesson.length>60?'...':''}</div>`:''}
+      ${e.good?`<div class="day-entry-preview">✅ ${e.good.substring(0,60)}${e.good.length>60?'...':''}</div>`:''}
+      <div style="font-size:11px;color:var(--text2);margin-top:4px">Tap to view / edit</div>
+    </div>
+  `).join('');
+  document.getElementById('day-overlay').classList.add('open');
+}
+
+function closeDayModal(){document.getElementById('day-overlay').classList.remove('open');}
+
+function openEntry(id){
+  const e=entries.find(e=>e.id===id);
+  if(!e)return;
+  currentEntryId=e.id;
+  document.getElementById('entry-modal-title').textContent='✈️ '+e.date+(e.duty?' — '+e.duty:'');
+  document.getElementById('entry-detail-content').innerHTML=`
+    ${e.duty?`<p style="color:var(--accent);font-weight:600;margin-bottom:8px">Duty: ${e.duty}</p>`:''}
+    ${e.lesson?`<p style="margin-bottom:6px"><b>Learned:</b> ${e.lesson}</p>`:''}
+    ${e.good?`<p style="margin-bottom:6px"><b>Good:</b> ${e.good}</p>`:''}
+    ${e.improve?`<p style="margin-bottom:6px"><b>Improve:</b> ${e.improve}</p>`:''}
+    ${e.notes?`<p style="margin-bottom:6px"><b>Notes:</b> ${e.notes}</p>`:''}
+    ${e.ratings?`<div style="margin-top:10px;font-size:13px">${skills.map(s=>`<div style="margin-bottom:4px">${s.label}: ${'★'.repeat(e.ratings[s.id]||0)}${'☆'.repeat(5-(e.ratings[s.id]||0))}</div>`).join('')}</div>`:''}
+  `;
+  document.getElementById('entry-view-mode').classList.remove('hidden');
+  document.getElementById('entry-edit-mode').classList.add('hidden');
+  document.getElementById('entry-overlay').classList.add('open');
+}
+
+function closeEntry(){document.getElementById('entry-overlay').classList.remove('open');}
+
 async function deleteCurrentEntry(){
   if(!confirm('Delete this entry?'))return;
   try{
     const {deleteDoc,doc}=window.fbFunctions;
     await deleteDoc(doc(window.db,'entries',currentEntryId));
     closeEntry();
+    closeDayModal();
     await loadEntries();
   }catch(e){alert('Error: '+e.message);}
 }
@@ -444,26 +501,6 @@ async function saveEdit(){
   }catch(e){alert('Error: '+e.message);}
 }
 
-function openEntryForDate(dateStr){
-  const e=entries.find(e=>e.date===dateStr);
-  if(!e)return;
-  currentEntryId=e.id;
-  document.getElementById('entry-modal-title').textContent='✈️ '+e.date+(e.duty?' — '+e.duty:'');
-  document.getElementById('entry-detail-content').innerHTML=`
-    ${e.duty?`<p style="color:var(--accent);font-weight:600;margin-bottom:8px">Duty: ${e.duty}</p>`:''}
-    ${e.lesson?`<p style="margin-bottom:6px"><b>Learned:</b> ${e.lesson}</p>`:''}
-    ${e.good?`<p style="margin-bottom:6px"><b>Good:</b> ${e.good}</p>`:''}
-    ${e.improve?`<p style="margin-bottom:6px"><b>Improve:</b> ${e.improve}</p>`:''}
-    ${e.notes?`<p style="margin-bottom:6px"><b>Notes:</b> ${e.notes}</p>`:''}
-    ${e.ratings?`<div style="margin-top:10px;font-size:13px">${skills.map(s=>`<div style="margin-bottom:4px">${s.label}: ${'★'.repeat(e.ratings[s.id]||0)}${'☆'.repeat(5-(e.ratings[s.id]||0))}</div>`).join('')}</div>`:''}
-  `;
-  document.getElementById('entry-view-mode').classList.remove('hidden');
-  document.getElementById('entry-edit-mode').classList.add('hidden');
-  document.getElementById('entry-overlay').classList.add('open');
-}
-
-function closeEntry(){document.getElementById('entry-overlay').classList.remove('open');}
-
 function renderCalendar(){
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-title').textContent=months[calMonth]+' '+calYear;
@@ -472,15 +509,24 @@ function renderCalendar(){
   const firstDay=new Date(calYear,calMonth,1).getDay();
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const today=new Date().toISOString().split('T')[0];
-  const entryDates=new Set(entries.map(e=>e.date));
+
+  // Count entries per date
+  const dateCounts={};
+  entries.forEach(e=>{
+    if(e.date) dateCounts[e.date]=(dateCounts[e.date]||0)+1;
+  });
+
   let html='';
   for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
   for(let d=1;d<=daysInMonth;d++){
     const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const hasEntry=entryDates.has(dateStr);
+    const count=dateCounts[dateStr]||0;
     const isToday=dateStr===today;
-    html+=`<div class="cal-day${hasEntry?' has-entry':''}${isToday?' today':''}" ${hasEntry?`onclick="openEntryForDate('${dateStr}')"`:''}>`;
-    html+=d+'</div>';
+    const cls=count>1?'multi-entry':count===1?'has-entry':'';
+    html+=`<div class="cal-day${cls?' '+cls:''}${isToday?' today':''}" ${count>0?`onclick="openDayModal('${dateStr}')"`:''}>`;
+    html+=d;
+    if(count>1) html+=`<span class="flight-count">${count}x</span>`;
+    html+=`</div>`;
   }
   document.getElementById('calendar-grid').innerHTML=html;
 }
